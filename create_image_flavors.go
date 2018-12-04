@@ -2,6 +2,7 @@ package wpm
 /*
  *
  * @author srege
+ * @author hmgowda
  */
 import(
 	"log"
@@ -12,10 +13,16 @@ import(
 	"time"
 	"crypto/tls"
 	"encoding/json"
-	//"os"
-	//"strings"
-	//"errors"
-	//"intel/isecl/lib/flavor"
+	"os"
+	"strings"
+	"io"
+//	"intel/isecl/lib/flavor"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/pem"
+	"crypto/sha256"
+	
 )
 
 type Client struct {
@@ -31,14 +38,11 @@ func NewBasicAuthClient(username string, password string) *Client {
 }
 type AuthToken struct{
 	AuthorizationToken string `json:"authorization_token"` 
-	AuthorizationDate string  `json:"authorization_date"`
-    NotAfter string  `json:"not_after"`
-	Faults []string  `json:"faults"`
 }
 
 type KeyInfo struct{
 	KeyId string `json:"id"`
-	CipherMode string `json:"cipher_mode"`
+	CipherMode string `json:"mode"`
 	Algorithm string `json:"algorithm"`
 	KeyLength string `json:"key_length"`
 	PaddingMode string `json:"padding_mode"`
@@ -48,49 +52,64 @@ type KeyInfo struct{
 	
 }
 
-func createImageFlavor (imagePath string,encryptFilePath string,keyId string,encryptionRequired bool,integrityEnforced bool,outPutFile string)(error) {
-	/*//input validation
+type KeyObj struct{
+	Key string `json:"key"`
+}
+
+func (s *Client) CreateImageFlavor (imagePath string,encryptFilePath string,keyId string,encryptionRequired bool,integrityEnforced bool,outPutFile string)(error) {
 	var err error
+	kms_ip := "10.105.168.214"
+	kms_port :="443"
+	var key string
+	var keyUrl string
+
+	//input validation
 	if (len(strings.TrimSpace(imagePath)) <= 0){
-        return errors.New("image path not given")
+        log.Fatal("image path not given")
 	}
 	 
 	if (len(strings.TrimSpace(encryptFilePath)) <= 0){
-        return errors.New("encryption file path not given")
+		log.Fatal("encryption file path not given")
 	}
 
 	// check if image exists at the specified location
 	_, err = os.Stat(imagePath)
 	if !os.IsExist(err) {
-		return errors.New("image file does nt exist")
+		log.Fatal("image file does not exist")
 	}
 
+	// generate authentication token
 	client := NewBasicAuthClient("username", "password")
-	authToken,err := client.getAuthToken()
+	authToken,err := client.getAuthToken(kms_ip,kms_port)
 
 	if err!=nil {
 		log.Fatal("Error in generating token.",err)
 	}
-    */
-	/*if len(strings.TrimSpace(keyId)) <= 0 {
-		keyInformation = createKey(authToken)
-
-		//hardcoded values need to be removed
-		keyUrl := "https://10.1.70.56:443/v1/keys/" + keyInfo.KeyId + "/transfer"  
+   
+	//create key if keyId is not specified in input
+	if len(strings.TrimSpace(keyId)) <= 0 {
+		keyInformation := client.createKey(authToken.AuthorizationToken,kms_ip,kms_port)
+		keyUrl = "https://" + kms_ip + kms_port + "/v1/keys/" + keyInformation.KeyId + "/transfer"  
 		
-		encryptedKey := retrieveTransferKey(authToken,keyUrl)  
+		key = client.retrieveKey(authToken.AuthorizationToken,keyUrl)  
 	} else {
-		keyUrl := "https://10.1.70.56:443/v1/keys/" + keyId + "/transfer"  
-		encryptedKey := retrieveTransferKey(authToken,keyUrl) 
+        //retrieve key using keyid
+		keyUrl = "https://" + kms_ip + kms_port + "/v1/keys/" + keyId + "/transfer"  
+		key = client.retrieveKey(authToken.AuthorizationToken,keyUrl) 
 	}
 
-	//call to Encrypt image. 
-    //digest := encrypt(imagePath,encryptFilePath,encryptedKey)
-
-	//GetImageFlavor constructs a new ImageFlavor with the specified label, encryption policy, KMS url, encryption IV, and digest of the encrypted payload
-
-	imageFlavor := GetImageFlavor("label",encryptionRequired,keyUrl,digest)
-	if len(strings.TrimSpace(imagePath)) == 0 {
+	// encrypt image using key 
+	err,encryptedImage = encryptImage(imagePath, encryptFilePath, []byte(key))
+	if err!=nil{
+         log.Fatal("Error in encrypting image.",err)
+	}
+	
+	//calculate SHA256 of the encrpted image
+	digest := sha256.Sum256(encryptedImage)
+	
+	// create image flavor 
+	//imageFlavor := flavor.GetImageFlavor("label",encryptionRequired,keyUrl,digest)
+	/*if len(strings.TrimSpace(imagePath)) == 0 {
 		 return imageFlavor
 	}else {
 		fileOpen, err := os.Create(outPutFile)
@@ -100,8 +119,8 @@ func createImageFlavor (imagePath string,encryptFilePath string,keyId string,enc
 	  err = ioutil.WriteFile(fileOpen, imageFlavor, 0644)
 	  
 	}
-    
-	*/
+    */
+	
 	return nil
 }
 
@@ -141,13 +160,14 @@ func (s *Client) sendRequest(req *http.Request) ([]byte, error) {
 
 func (s *Client) createKey(authToken string,kms_ip string,kms_port string) (KeyInfo) {
 	var url string
+	var requestBody []byte
 	var keyObj KeyInfo
+	
+
 	url = "https://"+ kms_ip +  ":" + kms_port + "/v1/keys"
-	
-	var jsonStr = []byte(`{"algorithm": "AES","key_length": "256","cipher_mode": "GCM"}`)
-	
-	
-	httpRequest,err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	requestBody = []byte(`{"algorithm": "AES","key_length": "256","mode": "GCM"}`)
+		
+	httpRequest,err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	httpRequest.Header.Set("Accept", "application/json")
 	httpRequest.Header.Set("Content-Type", "application/json")
 	httpRequest.Header.Set("Authorization","Token " + authToken)
@@ -172,9 +192,8 @@ func (s *Client) getAuthToken(kms_ip string,kms_port string) (AuthToken,error) {
 	var url string
 		
 	url = "https://"+ kms_ip +  ":" + kms_port + "/v1/login"
-	var jsonStr = `{"username": "admin","password": "password"}`
-	requestBody = []byte(jsonStr)
-
+	requestBody = []byte(`{"username": "admin","password": "password"}`)
+	
     //POST request with Accept and Content-Type headers to generate token 
 	httpRequest, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	httpRequest.Header.Set("Accept", "application/json")
@@ -192,24 +211,52 @@ func (s *Client) getAuthToken(kms_ip string,kms_port string) (AuthToken,error) {
 	return authToken,nil
 }
 
-/*func (s *Client) retrieveTransferKey(authToken AuthToken, keyUrl string) byte[]  {
-
-	req, err := http.NewRequest("POST", keyUrl,nil)
-	req.Header.Set("Accept", "application/x-pem-file")
-	req.Header.Set("Content-Type", "text/plain")
-	req.Header.Set("Authorization","Token " + authToken.AuthorizationToken)
+func (s *Client) retrieveKey(authToken string, keyUrl string) string {
+    var keyValue KeyObj
+	httpRequest, err := http.NewRequest("POST", keyUrl,nil)
+	httpRequest.Header.Set("Accept", "application/json")
+	httpRequest.Header.Set("Content-Type", "application/json")
+	httpRequest.Header.Set("Authorization","Token " + authToken)
 	if err != nil {
 	 log.Fatal(err)
 	}
-	fmt.Println("No error in request")
-	fmt.Println(req)
-	response, err := s.doRequest(req)
+	httpResponse, err := s.sendRequest(httpRequest)
 	if err != nil {
         panic(err.Error())
     }
-	fmt.Println(response)
-	return response
-}*/
+	_ = json.Unmarshal([]byte(httpResponse), &keyValue)
+    fmt.Println(keyValue.Key)
+	return keyValue.Key
+}
+
+
+func encryptImage(imagePath string,encryptFilePath string, key []byte) (error,byte[]) {
+	// reading the key file in Pem format
+	data, err := ioutil.ReadFile(imagePath)
+	if err != nil {
+		log.Fatal("Error reading the image file", err)
+	}
+
+  	decodedKey, _ := pem.Decode(key)
+	// creating a new cipher block of 128 bits
+	block, _ := aes.NewCipher(decodedKey.Bytes)
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		log.Fatal("Error creating a cipher block", err)
+	}
+	// assigning a 12 byte empty array to store random value
+	iv := make([]byte, 12)
+	// reading random value into the byte array
+	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
+		log.Fatal("Error creating random IV value", err)
+	}
+
+	// encrypting the file(data) with IV value and appending
+	// the IV to the first 12 bytes of the encrypted file
+	ciphertext := gcm.Seal(iv, iv, data, nil)
+	err = ioutil.WriteFile(encryptFilePath, ciphertext, 0644)
+	return err,cipherText
+}
 
 
 
