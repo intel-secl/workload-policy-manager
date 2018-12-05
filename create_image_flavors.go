@@ -16,12 +16,13 @@ import(
 	"os"
 	"strings"
 	"io"
-//	"intel/isecl/lib/flavor"
+	"intel/isecl/lib/flavor"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/pem"
 	"crypto/sha256"
+	"encoding/base64"
 	
 )
 
@@ -56,7 +57,7 @@ type KeyObj struct{
 	Key string `json:"key"`
 }
 
-func (s *Client) CreateImageFlavor (imagePath string,encryptFilePath string,keyId string,encryptionRequired bool,integrityEnforced bool,outPutFile string)(error) {
+func (s *Client) CreateImageFlavor (imagePath string,encryptFilePath string,keyId string,encryptionRequired bool,integrityEnforced bool,outputFile string)(string,error) {
 	var err error
 	kms_ip := "10.105.168.214"
 	kms_port :="443"
@@ -99,7 +100,7 @@ func (s *Client) CreateImageFlavor (imagePath string,encryptFilePath string,keyI
 	}
 
 	// encrypt image using key 
-	err,encryptedImage = encryptImage(imagePath, encryptFilePath, []byte(key))
+	err,encryptedImage := encryptImage(imagePath, encryptFilePath, []byte(key))
 	if err!=nil{
          log.Fatal("Error in encrypting image.",err)
 	}
@@ -108,20 +109,25 @@ func (s *Client) CreateImageFlavor (imagePath string,encryptFilePath string,keyI
 	digest := sha256.Sum256(encryptedImage)
 	
 	// create image flavor 
-	//imageFlavor := flavor.GetImageFlavor("label",encryptionRequired,keyUrl,digest)
-	/*if len(strings.TrimSpace(imagePath)) == 0 {
-		 return imageFlavor
+	imageFlavor,err := flavor.GetImageFlavor("label",encryptionRequired,keyUrl,base64.StdEncoding.EncodeToString(digest[:]))
+	if err!=nil{
+		log.Fatal("Error in creating image flavor.",err)
+   }
+    jsonFlavor, err := json.Marshal(imageFlavor)
+	if len(strings.TrimSpace(outputFile)) <= 0 {
+		 return string(jsonFlavor),nil
 	}else {
-		fileOpen, err := os.Create(outPutFile)
-       if err != nil {
-        panic(err)
-	  }
-	  err = ioutil.WriteFile(fileOpen, imageFlavor, 0644)
+		_, errorMsg := os.Stat(outputFile)
+	if !os.IsExist(errorMsg) {
+		log.Fatal("output file does not exist.")
+	}
+	
+	 err = ioutil.WriteFile(outputFile,[]byte(jsonFlavor), 0644)
 	  
 	}
-    */
+    
 	
-	return nil
+	return "",err
 }
 
 func (s *Client) sendRequest(req *http.Request) ([]byte, error) {
@@ -229,8 +235,7 @@ func (s *Client) retrieveKey(authToken string, keyUrl string) string {
 	return keyValue.Key
 }
 
-
-func encryptImage(imagePath string,encryptFilePath string, key []byte) (error,byte[]) {
+func encryptImage(imagePath string,encryptFilePath string, key []byte) (error,[]byte) {
 	// reading the key file in Pem format
 	data, err := ioutil.ReadFile(imagePath)
 	if err != nil {
@@ -255,7 +260,7 @@ func encryptImage(imagePath string,encryptFilePath string, key []byte) (error,by
 	// the IV to the first 12 bytes of the encrypted file
 	ciphertext := gcm.Seal(iv, iv, data, nil)
 	err = ioutil.WriteFile(encryptFilePath, ciphertext, 0644)
-	return err,cipherText
+	return err,ciphertext
 }
 
 
