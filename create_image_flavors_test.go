@@ -38,18 +38,17 @@ func TestRetrieveTransferKey(t *testing.T) {
 }
 
 func TestEncryptImage(t *testing.T) {
-	var err error
 	fmt.Println("Inside test for encrypted Image")
-	imagePath := "/tmp/testEncryption/go-workload-policy-manager/cirros-x86.qcow2"
+	imagePath := "salonee.txt"
 	fmt.Println(imagePath)
-	_, errorMsg := os.Stat(imagePath)
-	if !os.IsExist(errorMsg) {
+	_,errorMsg := os.Stat(imagePath)
+	if(os.IsNotExist(errorMsg)) {
 		log.Fatal("image file does not exist.")
-	}
-	key := "2Hc3ZDesuyk2IrBEnO6Hqpfo+dYhwxHAoGrQzuB7G6U=PDR6P+iJYrxJ8DB6HfuTzRzAJUhwWmSs2o/Ixg9Yx4dtB4jrHU5x9WnVdNZ4T255WFz17MRmyevC+Ih6pBRGemy61Izd1iU7orZUy4d4G21rtnJlsNDdRDGnKKsSja8fe3xh1OshgpaW3vodKBirTirrNM7LYrZkiOY9T8gq3IjvLcYsMd3V3ylByFTBYS0BufFDz0miWixdMH8LeJ0I2jAiDyENKOt5azkh0TaV5tEqvovY1Dblm5LNhiYHOuM21xz/5yuwPlYqhTLH7ZX9xg1u7y/T6gd3qr4d9K2Tx2BGJpap0zYBT3gqyzh+5otVkcJME1ACCY3fDfVunHQLkw==PDR6P+iJYrxJ8DB6HfuTzRzAJUhwWmSs2o/Ixg9Yx4dtB4jrHU5x9WnVdNZ4T255WFz17MRmyevC+Ih6pBRGemy61Izd1iU7orZUy4d4G21rtnJlsNDdRDGnKKsSja8fe3xh1OshgpaW3vodKBirTirrNM7LYrZkiOY9T8gq3IjvLcYsMd3V3ylByFTBYS0BufFDz0miWixdMH8LeJ0I2jAiDyENKOt5azkh0TaV5tEqvovY1Dblm5LNhiYHOuM21xz/5yuwPlYqhTLH7ZX9xg1u7y/T6gd3qr4d9K2Tx2BGJpap0zYBT3gqyzh+5otVkcJME1ACCY3fDfVunHQLkw=="
-	encryptedPath := "/tmp/testEncryption/go-workload-policy-manager/cirros-x86.qcow2_enc"
-	err = encryptImage(imagePath,encryptedPath,[]byte(key))
+    }
+	key := "UyUGqlszfE5WQrf2PaCrxd0PbfqredR98P5jcCrwPhQ1b34n2SNvX1E0R7hdRdwfVVyH5T6aeEbGe4IJbwQ8zDG06g53Tl8koI8/WxmJEboaVc7brCUywdW2+/4TmeU+NfKvvlyfOWkg1XcVjt7YLaNMWxr2oV6U9enukq9qXE1uv6MdtZ6RDQ0712fhYR6QnQzOFw7Iv0YwMb/Fj12K3LrrxWpwCbtSmTKbGkCc0nBXU8CJ2xQNCnc4FyKuwqbwQWKaiN3vMNIPOmHduOVtA3HlsmSJAycal4GcAg9av7ZK6AOuoqYRmRvp+sfddMI6+wqZCyqoyhjCUD8ubhrzsg=="
+	encryptedPath := "salonee.txt_enc"
+	err,encryptedImage := encryptImage(imagePath,encryptedPath,[]byte(key))
 	assert.Nil(t, err)
-	assert.NotNil(t, key)
-	fmt.Println(key)
+	assert.NotNil(t, encryptedImage)
+	fmt.Println(encryptedImage)
 }

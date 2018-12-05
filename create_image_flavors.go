@@ -20,7 +20,7 @@ import(
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/pem"
+	//"encoding/pem"
 	"crypto/sha256"
 	"encoding/base64"
 	
@@ -236,21 +236,32 @@ func (s *Client) retrieveKey(authToken string, keyUrl string) string {
 }
 
 func encryptImage(imagePath string,encryptFilePath string, key []byte) (error,[]byte) {
+	fmt.Println("Step 1")
 	// reading the key file in Pem format
 	data, err := ioutil.ReadFile(imagePath)
+	fmt.Println("Step 1.2")
 	if err != nil {
+		fmt.Println("Error reading file")
 		log.Fatal("Error reading the image file", err)
 	}
-
-  	decodedKey, _ := pem.Decode(key)
+    fmt.Println("Step 2")
+	//decodedKey, _ := pem.Decode(key)
+	  
 	// creating a new cipher block of 128 bits
-	block, _ := aes.NewCipher(decodedKey.Bytes)
+	block, err := aes.NewCipher(key)
+	if err!= nil {
+		log.Fatal("Error creating new cipher block", err)
+	}
+
+	fmt.Println("Step 3")
 	gcm, err := cipher.NewGCM(block)
+	fmt.Println("Step 4")
 	if err != nil {
 		log.Fatal("Error creating a cipher block", err)
 	}
 	// assigning a 12 byte empty array to store random value
 	iv := make([]byte, 12)
+	fmt.Println("Step 5")
 	// reading random value into the byte array
 	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
 		log.Fatal("Error creating random IV value", err)
@@ -262,6 +273,5 @@ func encryptImage(imagePath string,encryptFilePath string, key []byte) (error,[]
 	err = ioutil.WriteFile(encryptFilePath, ciphertext, 0644)
 	return err,ciphertext
 }
-
 
 
