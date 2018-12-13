@@ -1,4 +1,4 @@
-package kbsclient
+package kmsclient
 
 import (
 	"crypto/tls"
@@ -10,12 +10,12 @@ import (
 
 //add imports
 
-func sendRequest(req *http.Request) ([]byte, error) {
+func SendRequest(req *http.Request) ([]byte, error) {
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			//add tls cert 256
-			// InsecureSkipVerify: true,
+			 InsecureSkipVerify: true,
 		},
 	}
 	client := &http.Client{
