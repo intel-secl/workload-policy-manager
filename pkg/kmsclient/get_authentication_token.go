@@ -1,9 +1,13 @@
 package kmsclient
 
+/*
+ *
+ * @author srege
+ *
+ */
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	c "intel/isecl/wpm/config"
 	"net/http"
 )
@@ -22,8 +26,6 @@ func GetAuthToken() (string, error) {
 
 	//Add client here
 	url = c.Configuration.BaseURL + "login"
-	fmt.Println(c.Configuration.BaseURL)
-	//requestBody = []byte(`{"username": " + config.Username,"password": "password"}`)
 
 	//build request body using username and password from config
 	requestBody.WriteString(`{"username":"`)
@@ -32,7 +34,7 @@ func GetAuthToken() (string, error) {
 	requestBody.WriteString(c.Configuration.Password)
 	requestBody.WriteString(`"}`)
 
-	//Construct POST request with Accept and Content-Type headers to generate token
+	// set POST request Accept and Content-Type headers
 	httpRequest, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(requestBody.String())))
 	httpRequest.Header.Set("Accept", "application/json")
 	httpRequest.Header.Set("Content-Type", "application/json")

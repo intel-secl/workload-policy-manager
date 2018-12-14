@@ -39,18 +39,18 @@ func TestCreateImageFlavor(t *testing.T) {
 	c.Configuration.BaseURL = "https://10.105.168.214:443/v1/"
 	c.Configuration.Username = "admin"
 	c.Configuration.Password = "password"
-	imageFlavor, err := CreateImageFlavor("salonee.txt", "salonee_enc.txt", "", true, false, "")
+	c.Configuration.EnvelopeKeyLocation = "admin-privatekey.pem"
+	imageFlavor, err := CreateImageFlavor("cirros-x86.qcow2", "cirros-x86.qcow2_enc", "", true, false, "")
 	assert.Nil(t, err)
 	assert.NotNil(t, imageFlavor)
-	fmt.Println(imageFlavor)
 }
 
 func TestCreateImageFlavorToFile(t *testing.T) {
 	c.Configuration.BaseURL = "https://10.105.168.214:443/v1/"
 	c.Configuration.Username = "admin"
 	c.Configuration.Password = "password"
-	imageFlavor, err := CreateImageFlavor("salonee.txt", "salonee_enc.txt", "", true, false, "image_flavor.text")
+	imageFlavor, err := CreateImageFlavor("cirros-x86.qcow2", "cirros-x86.qcow2_enc", "", true, false, "image_flavor.text")
 	assert.Nil(t, err)
 	assert.NotNil(t, imageFlavor)
-	fmt.Println(imageFlavor)
+
 }

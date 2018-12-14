@@ -3,9 +3,8 @@ package imageflavor
 /*
  *
  * @author srege
- * @author hmgowda
+ *
  */
-
 import (
 	"bytes"
 	"crypto/sha256"
@@ -36,13 +35,13 @@ type KeyInfo struct {
 
 //KeyObj is a represenation of the actual key
 type KeyObj struct {
-	Key string `json:"key"`
+	Key []byte `json:"key"`
 }
 
 //CreateImageFlavor is used to create flavor of an encrypted image
 func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, encryptionRequired bool, integrityEnforced bool, outputFile string) (string, error) {
 	var err error
-	var key string
+	var key []byte
 	var keyURL string
 
 	//input validation
@@ -63,30 +62,28 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 	authToken, err := kms.GetAuthToken()
 
 	if err != nil {
-		log.Fatal("Error in generating token.", err)
+		log.Fatal("Error in generating authentication token.", err)
 	}
 
 	//create key if keyId is not specified in input
 	if len(strings.TrimSpace(keyID)) <= 0 {
 		keyInformation := createKey(authToken)
 		keyURL = c.Configuration.BaseURL + "keys/" + keyInformation.KeyID + "/transfer"
-		fmt.Println(keyURL)
 		key = retrieveKey(authToken, keyURL)
-		fmt.Println(key)
 	} else {
 		//retrieve key using keyid
 		keyURL = c.Configuration.BaseURL + "keys/" + keyID + "/transfer"
-		fmt.Println(keyURL)
 		key = retrieveKey(authToken, keyURL)
-		fmt.Println(key)
 	}
 
 	// encrypt image using key
-	//encryptedImage := encrypt(imagePath, encryptFilePath, key)
-
+	err = encrypt(imagePath, c.Configuration.EnvelopeKeyLocation, encryptFilePath, key)
+	if err != nil {
+		log.Fatal("Error in encrypting image.", err)
+	}
+	encryptedImage, err := ioutil.ReadFile(encryptFilePath)
 	//calculate SHA256 of the encrpted image
-	s := "foo"
-	digest := sha256.Sum256([]byte(s))
+	digest := sha256.Sum256([]byte(encryptedImage))
 
 	// create image flavor
 	imageFlavor, err := flavor.GetImageFlavor("label", encryptionRequired, keyURL, base64.StdEncoding.EncodeToString(digest[:]))
@@ -97,7 +94,7 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 	if len(strings.TrimSpace(outputFile)) <= 0 {
 		return string(jsonFlavor), nil
 	}
-	//create outputFile
+	//create outputFile for image flavor
 	_, err = os.Create(outputFile)
 	if err != nil {
 		log.Fatal("Cannot create file", err)
@@ -119,26 +116,26 @@ func createKey(authToken string) KeyInfo {
 	url = c.Configuration.BaseURL + "keys"
 	requestBody = []byte(`{"algorithm": "AES","key_length": "256","mode": "GCM"}`)
 
+	// set POST request Accept, Content-Type and Authorization headers
 	httpRequest, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	httpRequest.Header.Set("Accept", "application/json")
 	httpRequest.Header.Set("Content-Type", "application/json")
 	httpRequest.Header.Set("Authorization", "Token "+authToken)
 
-	if err != nil {
-		log.Fatal("Error in request for key creation. ", err)
-	}
-
 	httpResponse, err := kms.SendRequest(httpRequest)
 	if err != nil {
-		log.Fatal("Error in response from key creation request. ", err)
+		log.Fatal("Error in key creation. ", err)
 	}
 
+	//deserialize the response to KeyInfo
 	_ = json.Unmarshal([]byte(httpResponse), &keyObj)
 	return keyObj
 }
 
-func retrieveKey(authToken string, keyURL string) string {
+func retrieveKey(authToken string, keyURL string) []byte {
 	var keyValue KeyObj
+
+	// set POST request Accept, Content-Type and Authorization headers
 	httpRequest, err := http.NewRequest("POST", keyURL, nil)
 	httpRequest.Header.Set("Accept", "application/json")
 	httpRequest.Header.Set("Content-Type", "application/json")
@@ -148,9 +145,10 @@ func retrieveKey(authToken string, keyURL string) string {
 	}
 	httpResponse, err := kms.SendRequest(httpRequest)
 	if err != nil {
-		panic(err.Error())
+		log.Fatal("Error in key retrieval. ", err)
 	}
+
+	//deserialize the response to KeyInfo
 	_ = json.Unmarshal([]byte(httpResponse), &keyValue)
-	fmt.Println(keyValue.Key)
 	return keyValue.Key
 }
