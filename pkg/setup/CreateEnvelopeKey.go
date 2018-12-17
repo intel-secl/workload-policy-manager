@@ -5,18 +5,18 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"golang.org/x/crypto/ssh"
-	"io/ioutil"
-	"log"
+	"errors"
+	"os"
 )
 
-func Validate() bool{
-	isPubKeyExists bool := false
-	isPriKeyExists bool := false
+// Validate method is used to check if the envelope keys exists on disk
+func Validate() bool {
+	isPubKeyExists := false
+	isPriKeyExists := false
 	privateKey := "/opt/wpm/configuration/envelopePrivateKey.pem"
 	publicKey := "/opt/wpm/configuration/envelopePublicKey.pub"
 
-	_, err = os.Stat(privateKey)
+	_, err := os.Stat(privateKey)
 	if !os.IsNotExist(err) {
 		isPriKeyExists = true
 	}
@@ -34,14 +34,15 @@ func Validate() bool{
 
 }
 
-func CreateEnvelopeKey() {
+// CreateEnvelopeKey method is used t create the envelope key
+func CreateEnvelopeKey() error {
 	savePrivateFileTo := "/opt/wpm/configuration/envelopeKey.pem"
 	savePublicFileTo := "/opt/wpm/configuration/envelopeKey.pub"
 	bitSize := 2048
 
 	keyPair, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Error while generating a new RSA key pair")
 	}
 
 	// save private key
@@ -52,12 +53,12 @@ func CreateEnvelopeKey() {
 
 	privateKeyFile, err := os.Create(savePrivateFileTo)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Error while creating a new file")
 	}
 	defer privateKeyFile.Close()
 	err = pem.Encode(privateKeyFile, privateKey)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Error while encoding the private key")
 	}
 
 	// save public key
@@ -65,9 +66,9 @@ func CreateEnvelopeKey() {
 
 	pubkeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Error while getting the public key from private key")
 	}
-	
+
 	var publicKeyInPem = &pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: pubkeyBytes,
@@ -75,12 +76,13 @@ func CreateEnvelopeKey() {
 
 	publicKeyFile, err := os.Create(savePublicFileTo)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Error while creating a new file")
 	}
 	defer publicKeyFile.Close()
 
 	err = pem.Encode(publicKeyFile, publicKeyInPem)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Error while encoding the public key")
 	}
+	return nil
 }

@@ -6,8 +6,9 @@ package config
  *
  */
 var Configuration struct {
-	BaseURL             string
-	Username            string
-	Password            string
-	EnvelopeKeyLocation string
+	KmsAPIURL                  string
+	KmsAPIUsername             string
+	KmsAPIPassword             string
+	EnvelopePublickeyLocation  string
+	EnvelopePrivatekeyLocation string
 }

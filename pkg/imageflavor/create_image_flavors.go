@@ -12,8 +12,8 @@ import (
 	"encoding/json"
 	"fmt"
 	flavor "intel/isecl/lib/flavor"
-	c "intel/isecl/wpm/config"
-	kms "intel/isecl/wpm/pkg/kmsclient"
+	config "intel/isecl/wpm/config"
+	client "intel/isecl/wpm/pkg/kmsclient"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -59,7 +59,7 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 		log.Fatal("image file does not exist")
 	}
 	// generate authentication token
-	authToken, err := kms.GetAuthToken()
+	authToken, err := client.GetAuthToken()
 
 	if err != nil {
 		log.Fatal("Error in generating authentication token.", err)
@@ -68,16 +68,16 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 	//create key if keyId is not specified in input
 	if len(strings.TrimSpace(keyID)) <= 0 {
 		keyInformation := createKey(authToken)
-		keyURL = c.Configuration.BaseURL + "keys/" + keyInformation.KeyID + "/transfer"
+		keyURL = config.Configuration.KmsAPIURL + "keys/" + keyInformation.KeyID + "/transfer"
 		key = retrieveKey(authToken, keyURL)
 	} else {
 		//retrieve key using keyid
-		keyURL = c.Configuration.BaseURL + "keys/" + keyID + "/transfer"
+		keyURL = config.Configuration.KmsAPIURL + "keys/" + keyID + "/transfer"
 		key = retrieveKey(authToken, keyURL)
 	}
 
 	// encrypt image using key
-	err = encrypt(imagePath, c.Configuration.EnvelopeKeyLocation, encryptFilePath, key)
+	err = encrypt(imagePath, config.Configuration.EnvelopePrivatekeyLocation, encryptFilePath, key)
 	if err != nil {
 		log.Fatal("Error in encrypting image.", err)
 	}
@@ -113,7 +113,7 @@ func createKey(authToken string) KeyInfo {
 	var requestBody []byte
 	var keyObj KeyInfo
 
-	url = c.Configuration.BaseURL + "keys"
+	url = config.Configuration.KmsAPIURL + "keys"
 	requestBody = []byte(`{"algorithm": "AES","key_length": "256","mode": "GCM"}`)
 
 	// set POST request Accept, Content-Type and Authorization headers
@@ -122,7 +122,7 @@ func createKey(authToken string) KeyInfo {
 	httpRequest.Header.Set("Content-Type", "application/json")
 	httpRequest.Header.Set("Authorization", "Token "+authToken)
 
-	httpResponse, err := kms.SendRequest(httpRequest)
+	httpResponse, err := client.SendRequest(httpRequest)
 	if err != nil {
 		log.Fatal("Error in key creation. ", err)
 	}
@@ -143,7 +143,7 @@ func retrieveKey(authToken string, keyURL string) []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	httpResponse, err := kms.SendRequest(httpRequest)
+	httpResponse, err := client.SendRequest(httpRequest)
 	if err != nil {
 		log.Fatal("Error in key retrieval. ", err)
 	}

@@ -25,13 +25,13 @@ func GetAuthToken() (string, error) {
 	var requestBody bytes.Buffer
 
 	//Add client here
-	url = c.Configuration.BaseURL + "login"
+	url = c.Configuration.KmsAPIURL + "login"
 
 	//build request body using username and password from config
 	requestBody.WriteString(`{"username":"`)
-	requestBody.WriteString(c.Configuration.Username)
+	requestBody.WriteString(c.Configuration.KmsAPIUsername)
 	requestBody.WriteString(`","password":"`)
-	requestBody.WriteString(c.Configuration.Password)
+	requestBody.WriteString(c.Configuration.KmsAPIPassword)
 	requestBody.WriteString(`"}`)
 
 	// set POST request Accept and Content-Type headers

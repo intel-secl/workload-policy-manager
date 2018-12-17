@@ -8,3 +8,5 @@ require (
 )
 
 replace intel/isecl/lib/flavor => gitlab.devtools.intel.com/sst/isecl/lib/flavor v0.0.0-20181206181952-1ec1e81fed41
+
+replace intel/isecl/wpm => ./

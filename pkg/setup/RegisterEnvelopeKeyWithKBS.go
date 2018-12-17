@@ -2,94 +2,50 @@ package setup
 
 import (
 	"bytes"
-	"crypto/tls"
-	"encoding/json"
-	"fmt"
+	"errors"
+	config "intel/isecl/wpm/config"
+	client "intel/isecl/wpm/pkg/kmsclient"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"time"
 )
 
-type authToken struct {
-	AuthorizationToken string `json:"authorization_token"`
+func validate() {
+
 }
 
-func sendRequest(req *http.Request) ([]byte, error) {
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			//Needs to be changed to use secure tls cert 256
-			InsecureSkipVerify: true,
-		},
-	}
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   3 * time.Second,
-	}
-	response, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error in sending request.", err)
-		return nil, err
-	}
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if 200 != response.StatusCode {
-		fmt.Println("Returned status code "+string(response.StatusCode), err)
-		return nil, fmt.Errorf("%s", body)
-	}
-
-	return body, nil
-}
-
-func getAuthToken(username, password string) (authToken, error) {
-
-	var token authToken
-	url := "https://10.1.70.56:443/v1/login"
-	requestBody := []byte(`{"username": "admin","password": "password"}`)
-
-	//POST request with Accept and Content-Type headers to generate token
-	httpRequest, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
-	if err != nil {
-		log.Fatal("Error during initializing an http client")
-	}
-	httpRequest.Header.Set("Accept", "application/json")
-	httpRequest.Header.Set("Content-Type", "application/json")
-
-	response, err := sendRequest(httpRequest)
-	_ = json.Unmarshal([]byte(response), &token)
-	if err != nil {
-		return token, err
-	}
-	return token, nil
-}
-
-func registerUserPubKey(publicKey []byte, token authToken) {
-	requestURL := "https://10.1.70.56:443/v1/users/3aec609b-9226-420b-86f8-1121f5319773/transfer-key"
+func registerUserPubKey(publicKey []byte, userID string, token string) error {
+	requestURL := config.Configuration.KmsAPIURL + "users/" + userID + "/transfer-key"
 	httpRequest, err := http.NewRequest("PUT", requestURL, bytes.NewBuffer(publicKey))
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Error while creating a http request object")
 	}
 	httpRequest.Header.Set("Content-Type", "application/x-pem-file")
-	httpRequest.Header.Set("Authorization", "Token "+token.AuthorizationToken)
+	httpRequest.Header.Set("Authorization", "Token "+token)
 
-	_, _ = sendRequest(httpRequest)
+	_, err = client.SendRequest(httpRequest)
+	if err != nil {
+		return errors.New("Error while sending a PUT request with envelope public key")
+	}
+	return nil
 }
 
-func RegisterEnvelopeKey() {
-	token, err := getAuthToken("admin", "password")
+// RegisterEnvelopeKey method is used to register the envelope public key with the KBS user
+func RegisterEnvelopeKey() error {
+	token, err := client.GetAuthToken()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("token ", token.AuthorizationToken)
+	log.Println("token ", token)
 
-	publicKey, _ := ioutil.ReadFile("envelopeKey.pub")
-
-	registerUserPubKey(publicKey, token)
+	publicKey, _ := ioutil.ReadFile(config.Configuration.EnvelopePublickeyLocation)
+	userInfo, err := client.GetKmsUser(token)
+	if err != nil {
+		return errors.New("Error while gettig the KMS user information")
+	}
+	err = registerUserPubKey(publicKey, userInfo.UserID, token)
+	if err != nil {
+		return errors.New("Error while updating the KBS user with envelope public key")
+	}
+	return nil
 }

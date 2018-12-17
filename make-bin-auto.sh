@@ -17,6 +17,7 @@
 workspace=./target/wpm-1.0
 version=1.0
 goExecutableName=wpm
+export TMPDIR=~/.tmp
 
 # before we start, clear the install log (directory must already exist; created above)
 mkdir -p $workspace
@@ -25,13 +26,16 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo $
 echo "Created target/wpm1.0 directory"
 
-mkdir -p ~/.tmp/
+mkdir -p $TMPDIR
+if [ $? -ne 0 ]; then
+  echo_failure "Cannot create tmp directory"
+  exit 1
+fi
 cp install/*.sh $workspace
-go build -o $workspace/$goExecutableName ./cmd/wpm/main.go
-cp $workspace/$goExecutableName /usr/local/bin/
+# go build -o $workspace/$goExecutableName ./cmd/wpm/main.go
+# cp $workspace/$goExecutableName /usr/local/bin/
 
 
 # installer name
@@ -40,9 +44,9 @@ projectNameVersion=`basename "${workspace}"`
 targetDir=`dirname "${workspace}"`
 
 if [ -z "$workspace" ]; then
-  echo "Usage: $0 <workspace>"
-  echo "Example: $0 /path/to/AttestationService-0.5.1"
-  echo "The self-extracting installer AttestationService-0.5.1.bin would be created in /path/to"
+  echo_info "Usage: $0 <workspace>"
+  echo_info "Example: $0 /path/to/wpm-1.0.bin"
+  echo_info "The self-extracting installer wpm-1.0.bin would be created in /path/to"
   exit 1
 fi
 
@@ -54,10 +58,9 @@ chmod +x $workspace/*.sh
 # check for the makeself tool
 makeself=`which makeself`
 if [ -z "$makeself" ]; then
-    echo "Missing makeself tool"
+    echo_failure "Missing makeself tool"
     exit 1
 fi
 
-export TMPDIR=~/.tmp
 $makeself --follow --nocomp "$workspace" "$targetDir/${projectNameVersion}.bin" "$projectNameVersion" ./setup.sh
 rm -rf $TMPDIR
