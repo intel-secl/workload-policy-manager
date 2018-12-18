@@ -2,16 +2,20 @@ package main
 
 import (
 	"fmt"
+	config "intel/isecl/wpm/config"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
 	setup "intel/isecl/wpm/pkg/setup"
 	"log"
 	"os"
+	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
 func main() {
 
+	config.SetConfigValues()
 	if len(os.Args[0:]) <= 1 {
 		usage()
 		return
@@ -37,13 +41,20 @@ func main() {
 		}
 
 	case "create-image-flavor":
-		if len(os.Args[1:]) < 6 {
+		if len(os.Args[1:]) < 7 {
 			usage()
 			return
 		}
 
 		isEncryptionRequired, _ := strconv.ParseBool(os.Args[5])
-		_, err := imageFlavor.CreateImageFlavor(os.Args[2], os.Args[3], os.Args[4], isEncryptionRequired, false, os.Args[6])
+		//isIntegrityRequired, _ := strconv.ParseBool(os.Args[6])
+		var keyID string
+		if isValidUUID(os.Args[4]) {
+			keyID = os.Args[4]
+		} else {
+			keyID = ""
+		}
+		_, err := imageFlavor.CreateImageFlavor(os.Args[2], os.Args[3], keyID, isEncryptionRequired, false, os.Args[7])
 		if err != nil {
 			log.Fatal("cannot create flavor")
 		} else {
@@ -51,7 +62,7 @@ func main() {
 		}
 
 	case "uninstall":
-		log.Println("Uninstall")
+		uninstall()
 
 	case "help", "-help", "--help":
 		usage()
@@ -74,10 +85,41 @@ func createKeys() {
 func registerKeys() {
 	err := setup.RegisterEnvelopeKey()
 	if err != nil {
-		log.Fatal("Error creating the envelope key")
+		log.Fatal("Error registering the envelope key")
 	} else {
-		log.Println("Envelope key created successfully")
+		log.Println("Envelope key registered successfully")
 	}
+}
+
+func uninstall() {
+	var wpmHomeDirectory = "/opt/wpm/"
+
+	//remove wpm home directory
+	args := []string{"-rf", wpmHomeDirectory}
+	_, err := runCommand("rm", args)
+	if err != nil {
+		log.Fatal("Error trying to delete the WPM home directory")
+	}
+
+	//get the location of wpm binary
+	args = []string{"wpm"}
+	whichWpm, err := runCommand("which", args)
+	if err != nil {
+		log.Fatal("Error trying to check which wpm")
+	}
+
+	//delete the wpm binary from installed location
+	cmdArgs := []string{"-rf", whichWpm}
+	_, err = runCommand("rm", cmdArgs)
+	if err != nil {
+		log.Fatal("Error trying to delete the WPM binary")
+	}
+}
+
+func runCommand(cmd string, args []string) (string, error) {
+	out, err := exec.Command(cmd, args...).Output()
+	log.Println("whoch command: ", out)
+	return string(out), err
 }
 
 func usage() {
@@ -85,4 +127,9 @@ func usage() {
 	fmt.Println("Usage: $0 setup [--force|--noexec] [task1 task2 ...]")
 	//fmt.Println("Usage: $0 export-config [outfile|--in=infile|--out=outfile|--stdout] [--env-password=PASSWORD_VAR]")
 	fmt.Println("Available setup tasks:CreateEnvelopKey and RegisterEnvelopeKeyWithKBS")
+}
+
+func isValidUUID(uuid string) bool {
+	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
+	return r.MatchString(uuid)
 }

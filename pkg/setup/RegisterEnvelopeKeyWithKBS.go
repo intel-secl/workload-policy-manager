@@ -6,7 +6,6 @@ import (
 	config "intel/isecl/wpm/config"
 	client "intel/isecl/wpm/pkg/kmsclient"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -34,11 +33,12 @@ func registerUserPubKey(publicKey []byte, userID string, token string) error {
 func RegisterEnvelopeKey() error {
 	token, err := client.GetAuthToken()
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Error while getting authentication token")
 	}
-	log.Println("token ", token)
-
-	publicKey, _ := ioutil.ReadFile(config.Configuration.EnvelopePublickeyLocation)
+	publicKey, err := ioutil.ReadFile(config.Configuration.EnvelopePublickeyLocation)
+	if err != nil {
+		return errors.New("Error while reading the envelope public key")
+	}
 	userInfo, err := client.GetKmsUser(token)
 	if err != nil {
 		return errors.New("Error while gettig the KMS user information")

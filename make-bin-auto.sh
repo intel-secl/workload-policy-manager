@@ -34,7 +34,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 cp install/*.sh $workspace
-# go build -o $workspace/$goExecutableName ./cmd/wpm/main.go
+go build -o $workspace/$goExecutableName ./cmd/wpm/main.go
 # cp $workspace/$goExecutableName /usr/local/bin/
 
 

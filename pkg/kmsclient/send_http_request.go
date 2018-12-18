@@ -7,13 +7,14 @@ package kmsclient
  */
 import (
 	"crypto/tls"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-//add imports
+//SendRequest method is used to create an http client object and send the request to the server
 func SendRequest(req *http.Request) ([]byte, error) {
 
 	tr := &http.Transport{
@@ -28,7 +29,7 @@ func SendRequest(req *http.Request) ([]byte, error) {
 	}
 	response, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error in sending request.", err)
+		log.Println("Error in sending request.", err)
 		return nil, err
 	}
 	defer response.Body.Close()
@@ -40,10 +41,6 @@ func SendRequest(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 
-	if 200 != response.StatusCode {
-		fmt.Println("Returned status code "+string(response.StatusCode), err)
-		return nil, fmt.Errorf("%s", body)
-	}
-
+	log.Println("status code returned : ", strconv.Itoa(response.StatusCode))
 	return body, nil
 }

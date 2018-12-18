@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"intel/isecl/wpm/config"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -36,8 +37,8 @@ func Validate() bool {
 
 // CreateEnvelopeKey method is used t create the envelope key
 func CreateEnvelopeKey() error {
-	savePrivateFileTo := "/opt/wpm/configuration/envelopeKey.pem"
-	savePublicFileTo := "/opt/wpm/configuration/envelopeKey.pub"
+	savePrivateFileTo := "/opt/wpm/configuration/envelopePrivateKey.pem"
+	savePublicFileTo := "/opt/wpm/configuration/envelopePublicKey.pub"
 	bitSize := 2048
 
 	keyPair, err := rsa.GenerateKey(rand.Reader, bitSize)
@@ -84,5 +85,9 @@ func CreateEnvelopeKey() error {
 	if err != nil {
 		return errors.New("Error while encoding the public key")
 	}
+
+	config.Configuration.EnvelopePrivatekeyLocation = savePrivateFileTo
+	config.Configuration.EnvelopePublickeyLocation = savePublicFileTo
+	
 	return nil
 }

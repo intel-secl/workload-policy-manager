@@ -66,7 +66,7 @@ func unwrapKey(wrappedKey []byte, privateKeyLocation string) ([]byte, error) {
 
 	decryptedKey, errDecrypt := rsa.DecryptOAEP(sha256.New(), rand.Reader, pri, wrappedKey, nil)
 	if errDecrypt != nil {
-		return unwrappedKey, errors.New("Error while unwraping the key")
+		return unwrappedKey, errors.New("DecryptOEAP : Error while unwraping the key")
 	}
 
 	return decryptedKey, nil
