@@ -10,8 +10,8 @@ import (
 	"os"
 )
 
-// Validate method is used to check if the envelope keys exists on disk
-func Validate() bool {
+// ValidateCreateKey method is used to check if the envelope keys exists on disk
+func ValidateCreateKey() bool {
 	isPubKeyExists := false
 	isPriKeyExists := false
 	privateKey := "/opt/wpm/configuration/envelopePrivateKey.pem"
@@ -88,6 +88,6 @@ func CreateEnvelopeKey() error {
 
 	config.Configuration.EnvelopePrivatekeyLocation = savePrivateFileTo
 	config.Configuration.EnvelopePublickeyLocation = savePublicFileTo
-	
+
 	return nil
 }

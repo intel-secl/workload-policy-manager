@@ -123,26 +123,26 @@ if [ -z "$makeself" ]; then
     fi
 fi
 
-echo "Clear the install logs and write to it"
+echo_info "Clearing install logs and writing to it..."
 # before we start, clear the install log (directory must already exist; created above)
 mkdir -p $(dirname $INSTALL_LOG_FILE)
 if [ $? -ne 0 ]; then
-  echo "Cannot write to log directory: $(dirname $INSTALL_LOG_FILE)"
+  echo_failure "Cannot write to log directory: $(dirname $INSTALL_LOG_FILE)"
   exit 1
 fi
 date > $INSTALL_LOG_FILE
 if [ $? -ne 0 ]; then
-  echo "Cannot write to log file: $INSTALL_LOG_FILE"
+  echo_failure "Cannot write to log file: $INSTALL_LOG_FILE"
   exit 1
 fi
 
-echo "Create application directories and assign permissions"
+echo_info "Creating application directories and assigning permissions...."
 # 8. create application directories (chown will be repeated near end of this script, after setup)
 for directory in $WPM_HOME $WPM_CONFIGURATION $WPM_ENV $WPM_LOGS; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
   mkdir -p $directory
   if [ $? -ne 0 ]; then
-    echo "Cannot create directory: $directory"
+    echo_failure "Cannot create directory: $directory"
     exit 1
   fi
   chmod 700 $directory
@@ -163,7 +163,7 @@ if [ -f "$existing_wpm" ]; then
  exit 0
 fi
 
-echo "store directory layout in env file"
+echo_info "storing directory layout in env file..."
 # 11. store directory layout in env file
 echo "# $(date)" > $WPM_ENV/wpm-layout
 echo "WPM_HOME=$WPM_HOME" >> $WPM_ENV/wpm-layout
@@ -188,7 +188,7 @@ if [ -n "$WPM_NOSETUP" ]; then
   exit 0;
 fi
 
-echo "WPM installation complete"
+echo_success "WPM installation complete"
 WPM_BIN_NAME=wpm
 cp $WPM_BIN_NAME /usr/local/bin/
 # 33. wpm setup

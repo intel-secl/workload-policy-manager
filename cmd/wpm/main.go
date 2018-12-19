@@ -74,21 +74,33 @@ func main() {
 }
 
 func createKeys() {
-	err := setup.CreateEnvelopeKey()
-	if err != nil {
-		log.Fatal("Error creating the envelope key")
+	if setup.ValidateCreateKey() {
+		err := setup.CreateEnvelopeKey()
+		if err != nil {
+			log.Fatal("Error creating the envelope key")
+		} else {
+			log.Println("Envelope key created successfully")
+		}
 	} else {
-		log.Println("Envelope key created successfully")
+		log.Println("Envelope keys are already created by WPM. Skipping this setup task....")
+		return
 	}
 }
 
 func registerKeys() {
-	err := setup.RegisterEnvelopeKey()
-	if err != nil {
-		log.Fatal("Error registering the envelope key")
+	userID, token, isValidated := setup.ValidateRegisterKey()
+	if isValidated {
+		err := setup.RegisterEnvelopeKey(userID, token)
+		if err != nil {
+			log.Fatal("Error registering the envelope key")
+		} else {
+			log.Println("Envelope key registered successfully")
+		}
 	} else {
-		log.Println("Envelope key registered successfully")
+		log.Println("Envelope public key is already registered on KBS. Skipping this setup task....")
+		return
 	}
+
 }
 
 func uninstall() {
@@ -118,7 +130,6 @@ func uninstall() {
 
 func runCommand(cmd string, args []string) (string, error) {
 	out, err := exec.Command(cmd, args...).Output()
-	log.Println("whoch command: ", out)
 	return string(out), err
 }
 
