@@ -8,20 +8,18 @@ package kmsclient
 import (
 	"crypto/tls"
 	"encoding/hex"
-	"fmt"
 	t "intel/isecl/lib/common/tls"
 	"intel/isecl/wpm/config"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 //SendRequest method is used to create an http client object and send the request to the server
 func SendRequest(req *http.Request) ([]byte, error) {
 
-	cert, err := hex.DecodeString(config.Configuration.KMSTlsCertSHA256)
+	cert, err := hex.DecodeString(config.Configuration.KmsTLSSHA256)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -38,19 +36,7 @@ func SendRequest(req *http.Request) ([]byte, error) {
 	}
 	client := &http.Client{
 		Transport: &transport,
-		Timeout:   3 * time.Second,
 	}
-
-	/*tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify:    true,
-			VerifyPeerCertificate: t.VerifyCertBySha256(certificateDigest),
-		},
-	}
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   3 * time.Second,
-	}*/
 	response, err := client.Do(req)
 	if err != nil {
 		log.Println("Error in sending request.", err)
