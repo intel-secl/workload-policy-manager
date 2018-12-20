@@ -30,14 +30,18 @@ func GetKmsUser(token string) (UserInfo, error) {
 	httpRequest.Header.Set("Accept", "application/json")
 	httpRequest.Header.Set("Content-Type", "application/json")
 	httpRequest.Header.Set("Authorization", "Token "+token)
-	var userInfo Users
+	var userInfo UserInfo
+	var users Users
 
 	httpResponse, err := SendRequest(httpRequest)
 	if err != nil {
-		return userInfo.Users[0], errors.New("error while getting http response")
+		return userInfo, errors.New("error while getting http response")
 	}
 
 	//deserialize the response to UserInfo response
-	_ = json.Unmarshal([]byte(httpResponse), &userInfo)
-	return userInfo.Users[0], nil
+	err = json.Unmarshal([]byte(httpResponse), &users)
+	if err != nil {
+		return userInfo, errors.New("error while unmarshalling the http response to the type users")
+	}
+	return users.Users[0], nil
 }

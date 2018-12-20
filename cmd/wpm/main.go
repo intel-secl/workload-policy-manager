@@ -113,15 +113,8 @@ func uninstall() {
 		log.Fatal("Error trying to delete the WPM home directory")
 	}
 
-	//get the location of wpm binary
-	args = []string{"wpm"}
-	whichWpm, err := runCommand("which", args)
-	if err != nil {
-		log.Fatal("Error trying to check which wpm")
-	}
-
 	//delete the wpm binary from installed location
-	cmdArgs := []string{"-rf", whichWpm}
+	cmdArgs := []string{"-rf", "/usr/local/bin/wpm"}
 	_, err = runCommand("rm", cmdArgs)
 	if err != nil {
 		log.Fatal("Error trying to delete the WPM binary")
