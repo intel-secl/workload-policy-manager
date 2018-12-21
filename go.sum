@@ -12,5 +12,7 @@ gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181217195332-9f4e8677ff2
 gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181217195332-9f4e8677ff28/go.mod h1:QoBuIKg0Olk/c0420oq1X87FqNfzduAA38tFMqDRU+8=
 gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181218185421-b8d5dae998f1 h1:vTnwMo5WeWtyqGS/mT8lS//jyUJwuA+0jr1C1Rq3A6I=
 gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181218185421-b8d5dae998f1/go.mod h1:QoBuIKg0Olk/c0420oq1X87FqNfzduAA38tFMqDRU+8=
+gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181219001924-c333b49a3b24 h1:45wIoseQvMLHtcZKqt0331HXju50KzPaQt27ojD9VKo=
+gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181219001924-c333b49a3b24/go.mod h1:QoBuIKg0Olk/c0420oq1X87FqNfzduAA38tFMqDRU+8=
 gitlab.devtools.intel.com/sst/isecl/lib/flavor v0.0.0-20181206181952-1ec1e81fed41 h1:Lcn5jx9SIzKgUoz+SnBtv27iYb63gkds3/Wukrbu5Dk=
 gitlab.devtools.intel.com/sst/isecl/lib/flavor v0.0.0-20181206181952-1ec1e81fed41/go.mod h1:fCTEU9j0ghUk5WedUJokcVkjOym9WdeXhakwa+gH8u0=
