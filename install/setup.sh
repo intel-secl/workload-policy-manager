@@ -111,18 +111,6 @@ yum_detect() {
   if [ -n "$yum" ]; then return 0; else return 1; fi
 }
 
-# check for the makeself tool
-makeself=`which makeself`
-if [ -z "$makeself" ]; then
-   if yum_detect; then
-      echo_info "Installing yum"
-      yum install makeself
-    else
-      echo_failure "Yum package not detected"
-      exit 1
-    fi
-fi
-
 echo_info "Clearing install logs and writing to it..."
 # before we start, clear the install log (directory must already exist; created above)
 mkdir -p $(dirname $INSTALL_LOG_FILE)
