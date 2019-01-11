@@ -177,8 +177,8 @@ if [ -n "$WPM_NOSETUP" ]; then
 fi
 
 echo_success "WPM installation complete"
-WPM_BIN_NAME=wpm
-cp $WPM_BIN_NAME /usr/local/bin/
+WPM_BIN_NAME=workload-policy-manager
+cp $WPM_BIN_NAME /usr/local/bin/wpm
 # 33. wpm setup
 WPM_SETUP_TASKS="create-envelope-key register-envelope-key-with-kbs"
 wpm setup --all 
