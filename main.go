@@ -105,6 +105,7 @@ func registerKeys() {
 
 func uninstall() {
 	var wpmHomeDirectory = "/opt/wpm/"
+	var wpmBinFile = "/usr/local/bin/wpm"
 
 	//remove wpm home directory
 	args := []string{"-rf", wpmHomeDirectory}
@@ -112,13 +113,16 @@ func uninstall() {
 	if err != nil {
 		log.Fatal("Error trying to delete the WPM home directory")
 	}
+	log.Println("Deleting file: ", wpmHomeDirectory)
 
 	//delete the wpm binary from installed location
-	cmdArgs := []string{"-rf", "/usr/local/bin/wpm"}
+	cmdArgs := []string{"-rf", wpmBinFile}
 	_, err = runCommand("rm", cmdArgs)
 	if err != nil {
 		log.Fatal("Error trying to delete the WPM binary")
 	}
+	log.Println("Deleting file: ", wpmBinFile)
+	log.Println("WPM uninstalled.")
 }
 
 func runCommand(cmd string, args []string) (string, error) {
