@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	config "intel/isecl/wpm/config"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
@@ -9,12 +10,10 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
 func main() {
-
 	config.SetConfigValues()
 	if len(os.Args[0:]) <= 1 {
 		usage()
@@ -41,20 +40,38 @@ func main() {
 		}
 
 	case "create-image-flavor":
-		if len(os.Args[1:]) < 7 {
-			usage()
-			return
-		}
+		inputImageFilePath := flag.String("i", "", "Input image file path.")
+		outputEncryptedImageFilePath := flag.String("p", "", "Output encrypted image file path.")
+		outputFlavorFilePath := flag.String("o", "", "Output flavor file path. If not specified, the "+
+			"command will output on console by default.")
+		inputKeyID := flag.String("id", "", "Specify Key ID to get the image encryption key. If not "+
+			"specified, it will create a key by default.")
+		isEncryRequired := flag.Bool("enc", false, "Boolean parameter to specify if image has to "+
+			"be encrypted on the host when it is downloaded from the cloud orchestrator.")
+		flag.CommandLine.Parse(os.Args[2:])
 
-		isEncryptionRequired, _ := strconv.ParseBool(os.Args[5])
-		//isIntegrityRequired, _ := strconv.ParseBool(os.Args[6])
+		if *inputImageFilePath == "" {
+			fmt.Printf("Please provide the input image file path using -i option. It is a " +
+				"required parameter.\n")
+			os.Exit(1)
+		}
+		if *outputEncryptedImageFilePath == "" {
+			fmt.Printf("Please provide the output encrypted image file path using -p option. " +
+				"It is a required parameter.\n")
+			os.Exit(1)
+		}
+		fmt.Printf("inputImageFilePath: %s, outputEncryptedImageFilePath: %s, outputFlavorFilePath:"+
+			" %s, keyID: %s, isEncryRequired: %t\n", *inputImageFilePath, *outputEncryptedImageFilePath,
+			*outputFlavorFilePath, *inputKeyID, *isEncryRequired)
+
 		var keyID string
-		if isValidUUID(os.Args[4]) {
-			keyID = os.Args[4]
+		if isValidUUID(*inputKeyID) {
+			keyID = *inputKeyID
 		} else {
 			keyID = ""
 		}
-		_, err := imageFlavor.CreateImageFlavor(os.Args[2], os.Args[3], keyID, isEncryptionRequired, false, os.Args[7])
+		_, err := imageFlavor.CreateImageFlavor(*inputImageFilePath, *outputEncryptedImageFilePath,
+			keyID, *isEncryRequired, false, *outputFlavorFilePath)
 		if err != nil {
 			log.Fatal("cannot create flavor")
 		} else {
@@ -133,8 +150,7 @@ func runCommand(cmd string, args []string) (string, error) {
 func usage() {
 	fmt.Println("Usage: $0 uninstall|create-image-flavor|create-software-flavor")
 	fmt.Println("Usage: $0 setup [--force|--noexec] [task1 task2 ...]")
-	//fmt.Println("Usage: $0 export-config [outfile|--in=infile|--out=outfile|--stdout] [--env-password=PASSWORD_VAR]")
-	fmt.Println("Available setup tasks:CreateEnvelopKey and RegisterEnvelopeKeyWithKBS")
+	fmt.Println("Available setup tasks: CreateEnvelopKey and RegisterEnvelopeKeyWithKBS")
 }
 
 func isValidUUID(uuid string) bool {
