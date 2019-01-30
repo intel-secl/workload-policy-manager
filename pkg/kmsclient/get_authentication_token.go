@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	c "intel/isecl/wpm/config"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 //AuthToken is a representation of token using for authentication
@@ -25,13 +27,14 @@ func GetAuthToken() (string, error) {
 	var requestBody bytes.Buffer
 
 	//Add client here
-	url = c.Configuration.KmsAPIURL + "login"
+	url = c.Configuration.Kms.APIURL + "login"
+	log.Info("Creating authentication token")
 
 	//build request body using username and password from config
 	requestBody.WriteString(`{"username":"`)
-	requestBody.WriteString(c.Configuration.KmsAPIUsername)
+	requestBody.WriteString(c.Configuration.Kms.APIUsername)
 	requestBody.WriteString(`","password":"`)
-	requestBody.WriteString(c.Configuration.KmsAPIPassword)
+	requestBody.WriteString(c.Configuration.Kms.APIPassword)
 	requestBody.WriteString(`"}`)
 
 	// set POST request Accept and Content-Type headers

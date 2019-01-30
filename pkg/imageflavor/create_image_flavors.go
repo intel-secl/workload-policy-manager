@@ -19,6 +19,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	logger "github.com/sirupsen/logrus"
 )
 
 //KeyInfo is a representation of key information
@@ -43,7 +45,7 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 	var err error
 	var key []byte
 	var keyURL string
-
+	logger.Info("Creating image flavor")
 	//input validation
 	if len(strings.TrimSpace(imagePath)) <= 0 {
 		log.Fatal("image path not given")
@@ -68,11 +70,11 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 	//create key if keyId is not specified in input
 	if len(strings.TrimSpace(keyID)) <= 0 {
 		keyInformation := createKey(authToken)
-		keyURL = config.Configuration.KmsAPIURL + "keys/" + keyInformation.KeyID + "/transfer"
+		keyURL = config.Configuration.Kms.APIURL + "keys/" + keyInformation.KeyID + "/transfer"
 		key = retrieveKey(authToken, keyURL)
 	} else {
 		//retrieve key using keyid
-		keyURL = config.Configuration.KmsAPIURL + "keys/" + keyID + "/transfer"
+		keyURL = config.Configuration.Kms.APIURL + "keys/" + keyID + "/transfer"
 		key = retrieveKey(authToken, keyURL)
 	}
 
@@ -112,10 +114,10 @@ func createKey(authToken string) KeyInfo {
 	var url string
 	var requestBody []byte
 	var keyObj KeyInfo
-
-	url = config.Configuration.KmsAPIURL + "keys"
+    logger.Info("Creating transfer key")
+	url = config.Configuration.Kms.APIURL + "keys"
 	requestBody = []byte(`{"algorithm": "AES","key_length": "256","mode": "GCM"}`)
-
+    
 	// set POST request Accept, Content-Type and Authorization headers
 	httpRequest, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	httpRequest.Header.Set("Accept", "application/json")
@@ -134,7 +136,7 @@ func createKey(authToken string) KeyInfo {
 
 func retrieveKey(authToken string, keyURL string) []byte {
 	var keyValue KeyObj
-
+     logger.Info("Retrieving transfer key")
 	// set POST request Accept, Content-Type and Authorization headers
 	httpRequest, err := http.NewRequest("POST", keyURL, nil)
 	httpRequest.Header.Set("Accept", "application/json")

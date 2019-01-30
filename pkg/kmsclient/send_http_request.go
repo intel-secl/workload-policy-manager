@@ -14,12 +14,14 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+
+	logger "github.com/sirupsen/logrus"
 )
 
 //SendRequest method is used to create an http client object and send the request to the server
 func SendRequest(req *http.Request) ([]byte, error) {
 
-	cert, err := hex.DecodeString(config.Configuration.KmsTLSSHA256)
+	cert, err := hex.DecodeString(config.Configuration.Kms.TLSSHA256)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,6 +53,6 @@ func SendRequest(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 
-	log.Println("status code returned : ", strconv.Itoa(response.StatusCode))
+	logger.Debug("status code returned : ", strconv.Itoa(response.StatusCode))
 	return body, nil
 }

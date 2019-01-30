@@ -38,7 +38,7 @@ func ValidateRegisterKey() (string, string, bool) {
 }
 
 func registerUserPubKey(publicKey []byte, userID string, token string) error {
-	requestURL := config.Configuration.KmsAPIURL + "users/" + userID + "/transfer-key"
+	requestURL := config.Configuration.Kms.APIURL + "users/" + userID + "/transfer-key"
 	httpRequest, err := http.NewRequest("PUT", requestURL, bytes.NewBuffer(publicKey))
 	if err != nil {
 		return errors.New("Error while creating a http request object")

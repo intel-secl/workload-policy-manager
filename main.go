@@ -11,6 +11,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	logger "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -23,6 +25,7 @@ func main() {
 
 	switch arg := strings.ToLower(task); arg {
 	case "setup":
+		config.LogConfiguration()
 		switch setupTask := strings.ToLower(os.Args[2]); setupTask {
 		case "create-envelope-key":
 			createKeys()
@@ -73,9 +76,9 @@ func main() {
 		_, err := imageFlavor.CreateImageFlavor(*inputImageFilePath, *outputEncryptedImageFilePath,
 			keyID, *isEncryRequired, false, *outputFlavorFilePath)
 		if err != nil {
-			log.Fatal("cannot create flavor")
+			logger.Error("cannot create flavor")
 		} else {
-			log.Println("Image flavor created successfully")
+			logger.Info("Image flavor created successfully")
 		}
 
 	case "uninstall":
@@ -94,12 +97,12 @@ func createKeys() {
 	if setup.ValidateCreateKey() {
 		err := setup.CreateEnvelopeKey()
 		if err != nil {
-			log.Fatal("Error creating the envelope key")
+			logger.Error("Error creating the envelope key")
 		} else {
-			log.Println("Envelope key created successfully")
+			logger.Info("Envelope key created successfully")
 		}
 	} else {
-		log.Println("Envelope keys are already created by WPM. Skipping this setup task....")
+		logger.Info("Envelope keys are already created by WPM. Skipping this setup task....")
 		return
 	}
 }
@@ -109,12 +112,12 @@ func registerKeys() {
 	if isValidated {
 		err := setup.RegisterEnvelopeKey(userID, token)
 		if err != nil {
-			log.Fatal("Error registering the envelope key")
+			logger.Error("Error registering the envelope key")
 		} else {
-			log.Println("Envelope key registered successfully")
+			logger.Info("Envelope key registered successfully")
 		}
 	} else {
-		log.Println("Envelope public key is already registered on KBS. Skipping this setup task....")
+		logger.Info("Envelope public key is already registered on KBS. Skipping this setup task....")
 		return
 	}
 

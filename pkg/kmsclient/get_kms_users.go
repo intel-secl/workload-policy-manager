@@ -6,6 +6,8 @@ import (
 	config "intel/isecl/wpm/config"
 	"log"
 	"net/http"
+
+	logger "github.com/sirupsen/logrus"
 )
 
 //UserInfo is a representation of key information
@@ -22,7 +24,8 @@ type Users struct {
 
 // GetKmsUser is used to get the kms user information
 func GetKmsUser(token string) (UserInfo, error) {
-	requestURL := config.Configuration.KmsAPIURL + "users?usernameEqualTo=" + config.Configuration.KmsAPIUsername
+	logger.Info("Retrieving kms user information")
+	requestURL := config.Configuration.Kms.APIURL + "users?usernameEqualTo=" + config.Configuration.Kms.APIUsername
 	httpRequest, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
 		log.Fatal(err)

@@ -10,10 +10,10 @@ import (
 )
 
 func TestCreateKey(t *testing.T) {
-	config.Configuration.KmsAPIURL = "https://10.105.168.214:443/v1/"
-	config.Configuration.KmsAPIUsername = "admin"
-	config.Configuration.KmsAPIPassword = "password"
-	config.Configuration.KmsTLSSHA256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
+	config.Configuration.Kms.APIURL = "https://10.105.168.214:443/v1/"
+	config.Configuration.Kms.APIUsername = "admin"
+	config.Configuration.Kms.APIPassword = "password"
+	config.Configuration.Kms.TLSSHA256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
 	authToken, err := client.GetAuthToken()
 	keyInfo := createKey(authToken)
 	assert.Nil(t, err)
@@ -22,21 +22,21 @@ func TestCreateKey(t *testing.T) {
 }
 
 func TestRetrieveTransferKey(t *testing.T) {
-	config.Configuration.KmsAPIURL = "https://10.105.168.214:443/v1/"
-	config.Configuration.KmsAPIUsername = "admin"
-	config.Configuration.KmsAPIPassword = "password"
-	config.Configuration.KmsTLSSHA256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
+	config.Configuration.Kms.APIURL = "https://10.105.168.214:443/v1/"
+	config.Configuration.Kms.APIUsername = "admin"
+	config.Configuration.Kms.APIPassword = "password"
+	config.Configuration.Kms.TLSSHA256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
 	authToken, err := client.GetAuthToken()
 	keyID := "d10220b7-4398-48d7-8843-ccd9675f0d16"
-	keyURL := config.Configuration.KmsAPIURL + "keys/" + keyID + "/transfer"
+	keyURL := config.Configuration.Kms.APIURL + "keys/" + keyID + "/transfer"
 	key := retrieveKey(authToken, keyURL)
 	assert.Nil(t, err)
 	assert.NotNil(t, key)
 }
 func TestCreateImageFlavor(t *testing.T) {
-	config.Configuration.KmsAPIURL = "https://10.105.168.214:443/v1/"
-	config.Configuration.KmsAPIUsername = "admin"
-	config.Configuration.KmsAPIPassword = "password"
+	config.Configuration.Kms.APIURL = "https://10.105.168.214:443/v1/"
+	config.Configuration.Kms.APIUsername = "admin"
+	config.Configuration.Kms.APIPassword = "password"
 	config.Configuration.EnvelopePrivatekeyLocation = "admin-privatekey.pem"
 	config.Configuration.KmsTLSSHA256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
 	imageFlavor, err := CreateImageFlavor("cirros-x86.qcow2", "cirros-x86.qcow2_enc", "", true, false, "")
@@ -45,11 +45,11 @@ func TestCreateImageFlavor(t *testing.T) {
 }
 
 func TestCreateImageFlavorToFile(t *testing.T) {
-	config.Configuration.KmsAPIURL = "https://10.105.168.214:443/v1/"
-	config.Configuration.KmsAPIUsername = "admin"
-	config.Configuration.KmsAPIPassword = "password"
+	config.Configuration.Kms.APIURL = "https://10.105.168.214:443/v1/"
+	config.Configuration.Kms.APIUsername = "admin"
+	config.Configuration.Kms.APIPassword = "password"
 	config.Configuration.EnvelopePrivatekeyLocation = "admin-privatekey.pem"
-	config.Configuration.KmsTLSSHA256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
+	config.Configuration.Kms.TLSSHA256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
 	imageFlavor, err := CreateImageFlavor("cirros-x86.qcow2", "cirros-x86.qcow2_enc", "", true, false, "image_flavor.txt")
 	assert.Nil(t, err)
 	assert.NotNil(t, imageFlavor)
