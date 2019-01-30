@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	csetup "intel/isecl/lib/common/setup"
 	config "intel/isecl/wpm/config"
+	"intel/isecl/wpm/pkg"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
-	setup "intel/isecl/wpm/pkg/setup"
 	"log"
 	"os"
 	"os/exec"
@@ -16,31 +17,44 @@ import (
 )
 
 func main() {
-	config.SetConfigValues()
-	if len(os.Args[0:]) <= 1 {
+	args := os.Args[1:]
+	fmt.Println("Inside main")
+	fmt.Println(args)
+	if len(args) <= 0 {
+		fmt.Println("Length")
+		fmt.Println(len(args))
 		usage()
 		return
 	}
-	var task = os.Args[1]
-
-	switch arg := strings.ToLower(task); arg {
+	config.SetConfigValues()
+	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
-		config.LogConfiguration()
-		switch setupTask := strings.ToLower(os.Args[2]); setupTask {
-		case "create-envelope-key":
-			createKeys()
-
-		case "register-envelope-key":
-			registerKeys()
-
-		case "--all":
-			createKeys()
-			registerKeys()
-
-		default:
-			usage()
-			return
+		// Check if nosetup environment variable is true, if yes then skip the setup tasks
+		if nosetup, err := strconv.ParseBool(os.Getenv("WPM_NOSETUP")); err != nil && nosetup == false {
+			fmt.Println("Inside nosetup")
+			// Run list of setup tasks one by one
+			setupRunner := &csetup.Runner{
+				Tasks: []csetup.Task{
+					/*setup.CreateEnvelopeKey{
+						T: t,
+					},*/
+					//setup.RegisterEnvelopeKey{},
+					pkg.SaloneeInfo{},
+				},
+				AskInput: false,
+			}
+			fmt.Println("Before Runtasks")
+			err = setupRunner.RunTasks(args[1:]...)
+			fmt.Println("After Runtasks")
+			if err != nil {
+				fmt.Println("Error running setup: ", err)
+				os.Exit(1)
+			}
+		} else {
+			fmt.Println("WPM_NOSETUP is set, skipping setup")
+			os.Exit(1)
 		}
+		fmt.Println("End of case")
 
 	case "create-image-flavor":
 		inputImageFilePath := flag.String("i", "", "Input image file path.")
@@ -95,34 +109,26 @@ func main() {
 	}
 }
 
-func createKeys() {
-	if setup.ValidateCreateKey() {
-		err := setup.CreateEnvelopeKey()
-		if err != nil {
-			logger.Error("Error creating the envelope key")
-		} else {
-			logger.Info("Envelope key created successfully")
-		}
-	} else {
-		logger.Info("Envelope keys are already created by WPM. Skipping this setup task....")
-		return
-	}
-}
+func uninstall() {
+	var wpmHomeDirectory = "/opt/wpm/"
+	var wpmBinFile = "/usr/local/bin/wpm"
 
-func registerKeys() {
-	userID, token, isValidated := setup.ValidateRegisterKey()
-	if isValidated {
-		err := setup.RegisterEnvelopeKey(userID, token)
-		if err != nil {
-			logger.Error("Error registering the envelope key")
-		} else {
-			logger.Info("Envelope key registered successfully")
-		}
-	} else {
-		logger.Info("Envelope public key is already registered on KBS. Skipping this setup task....")
-		return
+	//remove wpm home directory
+	args := []string{"-rf", wpmHomeDirectory}
+	_, err := runCommand("rm", args)
+	if err != nil {
+		log.Fatal("Error trying to delete the WPM home directory")
 	}
+	log.Println("Deleting file: ", wpmHomeDirectory)
 
+	//delete the wpm binary from installed location
+	cmdArgs := []string{"-rf", wpmBinFile}
+	_, err = runCommand("rm", cmdArgs)
+	if err != nil {
+		log.Fatal("Error trying to delete the WPM binary")
+	}
+	log.Println("Deleting file: ", wpmBinFile)
+	log.Println("WPM uninstalled.")
 }
 
 func runCommand(cmd string, args []string) (string, error) {

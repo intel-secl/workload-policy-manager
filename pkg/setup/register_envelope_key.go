@@ -1,5 +1,6 @@
 package setup
 
+/*
 import (
 	"bytes"
 	"encoding/base64"
@@ -11,6 +12,9 @@ import (
 	"net/http"
 	"strings"
 )
+type RegisterEnvelopeKey struct {
+
+}
 
 // ValidateRegisterKey method is used to verify if the envelope key is registered with the KBS
 func ValidateRegisterKey() (string, string, bool) {
@@ -37,8 +41,13 @@ func ValidateRegisterKey() (string, string, bool) {
 
 }
 
-func registerUserPubKey(publicKey []byte, userID string, token string) error {
-	requestURL := config.Configuration.Kms.APIURL + "users/" + userID + "/transfer-key"
+func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
+
+	if re.Validate(c) == nil {
+		log.Info("Envelope key already registered. Skipping this setup task.")
+		return nil
+	}
+	requestURL := config.Configuration.KmsAPIURL + "users/" + userID + "/transfer-key"
 	httpRequest, err := http.NewRequest("PUT", requestURL, bytes.NewBuffer(publicKey))
 	if err != nil {
 		return errors.New("Error while creating a http request object")
@@ -85,3 +94,4 @@ func getUserInfo() (client.UserInfo, string, error) {
 
 	return userInfo, token, nil
 }
+*/
