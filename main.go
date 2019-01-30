@@ -82,7 +82,9 @@ func main() {
 		}
 
 	case "uninstall":
-		uninstall()
+		logger.Info("Uninstalling WPM")
+		deleteFile("/usr/local/bin/wpm")
+		deleteFile("/opt/wpm/")
 
 	case "help", "-help", "--help":
 		usage()
@@ -123,28 +125,6 @@ func registerKeys() {
 
 }
 
-func uninstall() {
-	var wpmHomeDirectory = "/opt/wpm/"
-	var wpmBinFile = "/usr/local/bin/wpm"
-
-	//remove wpm home directory
-	args := []string{"-rf", wpmHomeDirectory}
-	_, err := runCommand("rm", args)
-	if err != nil {
-		log.Fatal("Error trying to delete the WPM home directory")
-	}
-	log.Println("Deleting file: ", wpmHomeDirectory)
-
-	//delete the wpm binary from installed location
-	cmdArgs := []string{"-rf", wpmBinFile}
-	_, err = runCommand("rm", cmdArgs)
-	if err != nil {
-		log.Fatal("Error trying to delete the WPM binary")
-	}
-	log.Println("Deleting file: ", wpmBinFile)
-	log.Println("WPM uninstalled.")
-}
-
 func runCommand(cmd string, args []string) (string, error) {
 	out, err := exec.Command(cmd, args...).Output()
 	return string(out), err
@@ -159,4 +139,14 @@ func usage() {
 func isValidUUID(uuid string) bool {
 	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
 	return r.MatchString(uuid)
+}
+
+func deleteFile(path string) {
+	log.Println("Deleting file: ", path)
+	// delete file
+	var err = os.RemoveAll(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("WPM uninstalled successfully")
 }

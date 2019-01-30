@@ -64,7 +64,7 @@ func SetConfigValues() {
 	}
 }
 
-// LogConfiguration is used to setup log rotation configurations
+// LogConfiguration is used to setup log configurations
 func LogConfiguration() {
 	// creating the log file if not preset
 	LogFilePath := LogDirPath + LogFileName
@@ -79,7 +79,7 @@ func LogConfiguration() {
 	}
 	logFile, err := os.OpenFile(LogFilePath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		fmt.Printf("unable to write file on filehook %v\n", err)
+		fmt.Println("unable to write file ", err)
 		return
 	}
 	logger.SetFormatter(&logger.TextFormatter{FullTimestamp: true, TimestampFormat: time.RFC1123Z})
