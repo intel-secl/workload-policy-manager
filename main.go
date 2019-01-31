@@ -5,8 +5,8 @@ import (
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
 	config "intel/isecl/wpm/config"
-	"intel/isecl/wpm/pkg"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
+	"intel/isecl/wpm/pkg/setup"
 	"log"
 	"os"
 	"os/exec"
@@ -18,11 +18,7 @@ import (
 
 func main() {
 	args := os.Args[1:]
-	fmt.Println("Inside main")
-	fmt.Println(args)
 	if len(args) <= 0 {
-		fmt.Println("Length")
-		fmt.Println(len(args))
 		usage()
 		return
 	}
@@ -31,19 +27,16 @@ func main() {
 	case "setup":
 		// Check if nosetup environment variable is true, if yes then skip the setup tasks
 		if nosetup, err := strconv.ParseBool(os.Getenv("WPM_NOSETUP")); err != nil && nosetup == false {
-			fmt.Println("Inside nosetup")
 			// Run list of setup tasks one by one
 			setupRunner := &csetup.Runner{
 				Tasks: []csetup.Task{
 					setup.CreateEnvelopeKey{},
-					//setup.RegisterEnvelopeKey{},
-					//pkg.SaloneeInfo{},
+					setup.RegisterEnvelopeKey{},
 				},
 				AskInput: false,
 			}
-			fmt.Println("Before Runtasks")
+
 			err = setupRunner.RunTasks(args[1:]...)
-			fmt.Println("After Runtasks")
 			if err != nil {
 				fmt.Println("Error running setup: ", err)
 				os.Exit(1)
@@ -52,7 +45,6 @@ func main() {
 			fmt.Println("WPM_NOSETUP is set, skipping setup")
 			os.Exit(1)
 		}
-		fmt.Println("End of case")
 
 	case "create-image-flavor":
 		inputImageFilePath := flag.String("i", "", "Input image file path.")

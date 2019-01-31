@@ -181,5 +181,5 @@ WPM_BIN_NAME=workload-policy-manager
 cp $WPM_BIN_NAME /usr/local/bin/wpm
 # 33. wpm setup
 WPM_SETUP_TASKS="create-envelope-key register-envelope-key-with-kbs"
-wpm setup --all 
+wpm setup
 

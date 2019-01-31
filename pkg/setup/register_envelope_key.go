@@ -1,10 +1,11 @@
 package setup
 
-/*
 import (
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"fmt"
+	csetup "intel/isecl/lib/common/setup"
 	config "intel/isecl/wpm/config"
 	client "intel/isecl/wpm/pkg/kmsclient"
 	"io/ioutil"
@@ -12,8 +13,13 @@ import (
 	"net/http"
 	"strings"
 )
-type RegisterEnvelopeKey struct {
 
+type RegisterEnvelopeKey struct {
+}
+
+// ValidateRegisterKey method is used to verify if the envelope key is registered with the KBS
+func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
+	return nil
 }
 
 // ValidateRegisterKey method is used to verify if the envelope key is registered with the KBS
@@ -41,12 +47,26 @@ func ValidateRegisterKey() (string, string, bool) {
 
 }
 
+//RegisterEnvelopeKey method is used to register the envelope public key with the KBS user
 func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
-
-	if re.Validate(c) == nil {
-		log.Info("Envelope key already registered. Skipping this setup task.")
-		return nil
+	userID, token, isValidated := ValidateRegisterKey()
+	if !isValidated {
+		return errors.New("Envelope public key is already registered on KBS. Skipping this setup task....")
 	}
+	publicKey, err := ioutil.ReadFile(config.Configuration.EnvelopePublickeyLocation)
+	if err != nil {
+		return errors.New("Error while reading the envelope public key")
+	}
+
+	err = registerUserPubKey(publicKey, userID, token)
+	if err != nil {
+		return errors.New("Error while updating the KBS user with envelope public key")
+	}
+	fmt.Println("Envelop key registered successfully")
+	return nil
+}
+
+func registerUserPubKey(publicKey []byte, userID string, token string) error {
 	requestURL := config.Configuration.KmsAPIURL + "users/" + userID + "/transfer-key"
 	httpRequest, err := http.NewRequest("PUT", requestURL, bytes.NewBuffer(publicKey))
 	if err != nil {
@@ -58,21 +78,6 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 	_, err = client.SendRequest(httpRequest)
 	if err != nil {
 		return errors.New("Error while sending a PUT request with envelope public key")
-	}
-	return nil
-}
-
-// RegisterEnvelopeKey method is used to register the envelope public key with the KBS user
-func RegisterEnvelopeKey(userID, token string) error {
-
-	publicKey, err := ioutil.ReadFile(config.Configuration.EnvelopePublickeyLocation)
-	if err != nil {
-		return errors.New("Error while reading the envelope public key")
-	}
-
-	err = registerUserPubKey(publicKey, userID, token)
-	if err != nil {
-		return errors.New("Error while updating the KBS user with envelope public key")
 	}
 	return nil
 }
@@ -94,4 +99,3 @@ func getUserInfo() (client.UserInfo, string, error) {
 
 	return userInfo, token, nil
 }
-*/
