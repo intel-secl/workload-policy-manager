@@ -13,7 +13,6 @@ import (
 )
 
 type CreateEnvelopeKey struct {
-	T string
 }
 
 func (ek CreateEnvelopeKey) Run(c csetup.Context) error {

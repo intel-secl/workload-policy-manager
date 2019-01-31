@@ -35,11 +35,9 @@ func main() {
 			// Run list of setup tasks one by one
 			setupRunner := &csetup.Runner{
 				Tasks: []csetup.Task{
-					/*setup.CreateEnvelopeKey{
-						T: t,
-					},*/
+					setup.CreateEnvelopeKey{},
 					//setup.RegisterEnvelopeKey{},
-					pkg.SaloneeInfo{},
+					//pkg.SaloneeInfo{},
 				},
 				AskInput: false,
 			}
