@@ -1,15 +1,10 @@
 package config
 
 import (
-	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
+	csetup "intel/isecl/lib/common/setup"
 	"os"
-	"strings"
-	"time"
 
-	logger "github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 /*
@@ -27,7 +22,7 @@ var Configuration struct {
 		APIURL      string
 		APIUsername string
 		APIPassword string
-		TLSSHA256   string
+		TLSSha256   string
 	}
 	EnvelopePublickeyLocation  string
 	EnvelopePrivatekeyLocation string
@@ -35,32 +30,52 @@ var Configuration struct {
 
 var configFilePath = "/opt/wpm/configuration/wpm.properties"
 
-// SetConfigValues receives a pointer to Foo so it can modify it.
-func SetConfigValues() {
-	fileContents, err := ioutil.ReadFile(configFilePath)
-	if err != nil {
-		log.Fatal("Error reading the config file")
-	}
+const (
+	KMS_API_URL      = "KMS_API_URL"
+	KMS_API_USERNAME = "KMS_API_USERNAME"
+	KMS_API_PASSWORD = "KMS_API_PASSWORD"
+	KMS_TLS_SHA256   = "KMS_TLS_SHA256"
+	ConfigFilePath   = "/opt/wpm/configuration/config.yml"
+)
 
-	configArray := strings.Split(string(fileContents), "\n")
-	for i := 0; i < len(configArray)-1; i++ {
-		tempConfig := strings.Split(configArray[i], "=")
-		key := tempConfig[0]
-		value := strings.Replace(tempConfig[1], "\"", "", -1)
-		if strings.Contains(strings.ToLower(key), "url") {
-			Configuration.Kms.APIURL = value
-		} else if strings.Contains(strings.ToLower(key), "username") {
-			Configuration.Kms.APIUsername = value
-		} else if strings.Contains(strings.ToLower(key), "password") {
-			Configuration.Kms.APIPassword = value
-		} else if strings.Contains(strings.ToLower(key), "tls") {
-			Configuration.Kms.TLSSHA256 = value
-		} else if strings.Contains(strings.ToLower(key), "private") {
-			Configuration.EnvelopePrivatekeyLocation = value
-		} else if strings.Contains(strings.ToLower(key), "public") {
-			Configuration.EnvelopePublickeyLocation = value
+// Save the configuration struct into configuration directory
+func Save() error {
+	file, err := os.OpenFile(ConfigFilePath, os.O_RDWR, 0)
+	if err != nil {
+		// we have an error
+		if os.IsNotExist(err) {
+			// error is that the config doesnt yet exist, create it
+			file, err = os.Create(ConfigFilePath)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	defer file.Close()
+	return yaml.NewEncoder(file).Encode(Configuration)
+}
+
+// SaveConfiguration is used to save configurations that are provided in environment during setup tasks
+// This is called when setup tasks are called
+func SaveConfiguration(c csetup.Context) error {
+	var err error
+	Configuration.Kms.APIURL, err = c.GetenvString(KMS_API_URL, "Kms URL")
+	if err != nil {
+		return err
+	}
+	Configuration.Kms.APIUsername, err = c.GetenvString(KMS_API_USERNAME, "Kms Username")
+	if err != nil {
+		return err
+	}
+	Configuration.Kms.APIPassword, err = c.GetenvString(KMS_API_PASSWORD, "Kms Password")
+	if err != nil {
+		return err
+	}
+	Configuration.Kms.TLSSha256, err = c.GetenvString(KMS_TLS_SHA256, "Kms TLS SHA256")
+	if err != nil {
+		return err
+	}
+	return Save()
 }
 
 // LogConfiguration is used to setup log configurations

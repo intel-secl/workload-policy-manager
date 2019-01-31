@@ -21,7 +21,7 @@ import (
 //SendRequest method is used to create an http client object and send the request to the server
 func SendRequest(req *http.Request) ([]byte, error) {
 
-	cert, err := hex.DecodeString(config.Configuration.Kms.TLSSHA256)
+	cert, err := hex.DecodeString(config.Configuration.Kms.TLSSha256)
 	if err != nil {
 		log.Fatal(err)
 	}

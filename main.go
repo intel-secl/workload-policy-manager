@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
-	config "intel/isecl/wpm/config"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
 	"intel/isecl/wpm/pkg/setup"
 	"log"
@@ -22,7 +21,6 @@ func main() {
 		usage()
 		return
 	}
-	config.SetConfigValues()
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
 		// Check if nosetup environment variable is true, if yes then skip the setup tasks

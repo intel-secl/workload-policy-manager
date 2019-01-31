@@ -28,7 +28,6 @@ func GetAuthToken() (string, error) {
 
 	//Add client here
 	url = c.Configuration.Kms.APIURL + "login"
-	log.Info("Creating authentication token")
 
 	//build request body using username and password from config
 	requestBody.WriteString(`{"username":"`)

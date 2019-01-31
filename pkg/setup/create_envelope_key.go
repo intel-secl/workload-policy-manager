@@ -9,6 +9,8 @@ import (
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/wpm/config"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type CreateEnvelopeKey struct {
@@ -20,6 +22,12 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 		fmt.Println("Envelope key already created. Skipping this setup task.")
 		return nil
 	}*/
+	// save configuration from config.yml
+	e := config.SaveConfiguration(c)
+	if e != nil {
+		log.Error(e.Error())
+		return e
+	}
 	savePrivateFileTo := "/opt/wpm/configuration/envelopePrivateKey.pem"
 	savePublicFileTo := "/opt/wpm/configuration/envelopePublicKey.pub"
 	bitSize := 2048

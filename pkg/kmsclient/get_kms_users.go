@@ -24,7 +24,6 @@ type Users struct {
 
 // GetKmsUser is used to get the kms user information
 func GetKmsUser(token string) (UserInfo, error) {
-	logger.Info("Retrieving kms user information")
 	requestURL := config.Configuration.Kms.APIURL + "users?usernameEqualTo=" + config.Configuration.Kms.APIUsername
 	httpRequest, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {

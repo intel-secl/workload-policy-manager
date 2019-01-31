@@ -114,7 +114,6 @@ func createKey(authToken string) KeyInfo {
 	var url string
 	var requestBody []byte
 	var keyObj KeyInfo
-    logger.Info("Creating transfer key")
 	url = config.Configuration.Kms.APIURL + "keys"
 	requestBody = []byte(`{"algorithm": "AES","key_length": "256","mode": "GCM"}`)
     

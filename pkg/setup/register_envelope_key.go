@@ -12,6 +12,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	logger "github.com/sirupsen/logrus"
 )
 
 type RegisterEnvelopeKey struct {
@@ -49,9 +51,16 @@ func ValidateRegisterKey() (string, string, bool) {
 
 //RegisterEnvelopeKey method is used to register the envelope public key with the KBS user
 func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
+
 	userID, token, isValidated := ValidateRegisterKey()
 	if !isValidated {
 		return errors.New("Envelope public key is already registered on KBS. Skipping this setup task....")
+	}
+	// save configuration from config.yml
+	e := config.SaveConfiguration(c)
+	if e != nil {
+		logger.Error(e.Error())
+		return e
 	}
 	publicKey, err := ioutil.ReadFile(config.Configuration.EnvelopePublickeyLocation)
 	if err != nil {
@@ -67,7 +76,8 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 }
 
 func registerUserPubKey(publicKey []byte, userID string, token string) error {
-	requestURL := config.Configuration.KmsAPIURL + "users/" + userID + "/transfer-key"
+	requestURL := config.Configuration.Kms.
+		APIURL + "users/" + userID + "/transfer-key"
 	httpRequest, err := http.NewRequest("PUT", requestURL, bytes.NewBuffer(publicKey))
 	if err != nil {
 		return errors.New("Error while creating a http request object")
