@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -68,16 +67,7 @@ func SetConfigValues() {
 func LogConfiguration() {
 	// creating the log file if not preset
 	LogFilePath := LogDirPath + LogFileName
-	_, err := os.Stat(LogFilePath)
-	if os.IsNotExist(err) {
-		logger.Debug("Log file does not exist. Creating the file.")
-		_, touchErr := exec.Command("touch", LogFilePath).Output()
-		if touchErr != nil {
-			fmt.Println("Error while creating the log file.", touchErr)
-			return
-		}
-	}
-	logFile, err := os.OpenFile(LogFilePath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	logFile, err := os.OpenFile(LogFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
 	if err != nil {
 		fmt.Println("unable to write file ", err)
 		return
