@@ -95,10 +95,9 @@ echo_info "Creating directory layout"
 
 # LOCAL CONFIGURATION
 directory_layout() {
-export WPM_CONFIGURATION=${WPM_CONFIGURATION:-$WPM_HOME/configuration}
+export WPM_CONFIGURATION=${WPM_CONFIGURATION:-/opt/wpm/configuration}
 export WPM_LOGS=${WPM_LOGS:-$WPM_HOME/logs}
 export INSTALL_LOG_FILE=$WPM_LOGS/install.log
-export WPM_CONFIGURATION_FILE=$WPM_CONFIGURATION/wpm.properties
 }
 
 # 5. define application directory layout

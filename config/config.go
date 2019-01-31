@@ -3,7 +3,9 @@ package config
 import (
 	csetup "intel/isecl/lib/common/setup"
 	"os"
+	"time"
 
+	logger "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -12,10 +14,6 @@ import (
  * @author srege
  *
  */
-const (
-	LogDirPath  = "/opt/wpm/logs/"
-	LogFileName = "wpm.log"
-)
 
 var Configuration struct {
 	Kms struct {
@@ -28,14 +26,14 @@ var Configuration struct {
 	EnvelopePrivatekeyLocation string
 }
 
-var configFilePath = "/opt/wpm/configuration/wpm.properties"
-
 const (
 	KMS_API_URL      = "KMS_API_URL"
 	KMS_API_USERNAME = "KMS_API_USERNAME"
 	KMS_API_PASSWORD = "KMS_API_PASSWORD"
 	KMS_TLS_SHA256   = "KMS_TLS_SHA256"
 	ConfigFilePath   = "/opt/wpm/configuration/config.yml"
+	LogDirPath       = "/opt/wpm/logs/"
+	LogFileName      = "wpm.log"
 )
 
 // Save the configuration struct into configuration directory
@@ -95,5 +93,11 @@ func LogConfiguration() {
 var LogWriter io.Writer
 
 func init() {
+	// load from config
+	/*file, err := os.Open(ConfigFilePath)
+	if err == nil {
+		defer file.Close()
+		yaml.NewDecoder(file).Decode(&Configuration)
+	}*/
 	LogWriter = os.Stdout
 }
