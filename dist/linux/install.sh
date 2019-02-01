@@ -135,14 +135,6 @@ for directory in $WPM_HOME $WPM_CONFIGURATION $WPM_ENV $WPM_LOGS; do
   chmod 700 $directory
 done
 
-WPM_ENV_FILE=~/wpm.env
-echo_info "Writing env file into config file"
-# write the env variables to a config file
-if [ -d "$WPM_CONFIGURATION" ]; then
-    touch $WPM_CONFIGURATION_FILE
-    cat $WPM_ENV_FILE > $WPM_CONFIGURATION_FILE
-fi
-
 # if an existing wpm is already running, stop it while we install
 existing_wpm=`which wpm 2>/dev/null`
 if [ -f "$existing_wpm" ]; then
