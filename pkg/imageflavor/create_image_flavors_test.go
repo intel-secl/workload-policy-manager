@@ -3,7 +3,6 @@ package imageflavor
 import (
 	"fmt"
 	config "intel/isecl/wpm/config"
-	client "intel/isecl/wpm/pkg/kmsclient"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,12 +10,10 @@ import (
 
 func TestCreateKey(t *testing.T) {
 	config.Configuration.Kms.APIURL = "https://10.105.168.214:443/v1/"
-	config.Configuration.Kms.APIUsername = "admin"
+	config.Configuration.Kms.APIUsername = "kms-admin"
 	config.Configuration.Kms.APIPassword = "password"
 	config.Configuration.Kms.TLSSha256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
-	authToken, err := client.GetAuthToken()
-	keyInfo := createKey(authToken)
-	assert.Nil(t, err)
+	keyInfo := createKey()
 	assert.NotNil(t, keyInfo)
 	fmt.Println(keyInfo.KeyID)
 }
@@ -26,12 +23,11 @@ func TestRetrieveTransferKey(t *testing.T) {
 	config.Configuration.Kms.APIUsername = "admin"
 	config.Configuration.Kms.APIPassword = "password"
 	config.Configuration.Kms.TLSSha256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
-	authToken, err := client.GetAuthToken()
-	keyID := "d10220b7-4398-48d7-8843-ccd9675f0d16"
+	keyID := "1d7b080b-580a-4358-8ded-0b80923cf1db"
 	keyURL := config.Configuration.Kms.APIURL + "keys/" + keyID + "/transfer"
-	key := retrieveKey(authToken, keyURL)
-	assert.Nil(t, err)
+	key := retrieveKey(keyURL)
 	assert.NotNil(t, key)
+	fmt.Println(key)
 }
 func TestCreateImageFlavor(t *testing.T) {
 	config.Configuration.Kms.APIURL = "https://10.105.168.214:443/v1/"

@@ -6,13 +6,14 @@ import (
 	"errors"
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
-	k "intel/isecl/lib/kms-client"
 	config "intel/isecl/wpm/config"
-	client "intel/isecl/wpm/pkg/kmsclient"
+	//client "intel/isecl/wpm/pkg/kmsclient"
+	"intel/isecl/lib/kms-client"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+	"encoding/hex"
 
 	logger "github.com/sirupsen/logrus"
 )
@@ -52,7 +53,7 @@ func ValidateRegisterKey() (string, string, bool) {
 
 //RegisterEnvelopeKey method is used to register the envelope public key with the KBS user
 func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
-
+    fmt.Println("Before call to validateRegisterKey in Run")
 	userID, token, isValidated := ValidateRegisterKey()
 	if !isValidated {
 		return errors.New("Envelope public key is already registered on KBS. Skipping this setup task....")
@@ -63,13 +64,6 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 		logger.Error(e.Error())
 		return e
 	}
-
-	/*exampleClient := &k.Client{
-		BaseURL:  config.Configuration.Kms.APIURL,
-		Username: config.Configuration.Kms.APIUsername,
-		Password: config.Configuration.Kms.APIPassword,
-	}*/
-
 	publicKey, err := ioutil.ReadFile(config.Configuration.EnvelopePublickeyLocation)
 	if err != nil {
 		return errors.New("Error while reading the envelope public key")
@@ -84,34 +78,62 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 }
 
 func registerUserPubKey(publicKey []byte, userID string, token string) error {
-	kmsClient := config.InitiliazeClient(config.Configuration.Kms.APIURL, config.Configuration.Kms.APIUsername, config.Configuration.Kms.APIPassword)
-	fmt.Println("Inside registerKey")
-	fmt.Println(kmsClient.BaseURL)
+	var certificateDigest [32]byte
+	cert, err := hex.DecodeString(config.Configuration.Kms.TLSSha256)
+	if err != nil {
+		log.Fatal(err)
+	}
+	copy(certificateDigest[:], cert)
+	kc := &kms.Client{
+		BaseURL:  config.Configuration.Kms.APIURL,
+		Username: config.Configuration.Kms.APIUsername,
+		Password: config.Configuration.Kms.APIPassword,
+        CertSha256 :&certificateDigest,
+	}
+
 	requestURL := config.Configuration.Kms.APIURL + "users/" + userID + "/transfer-key"
 	httpRequest, err := http.NewRequest("PUT", requestURL, bytes.NewBuffer(publicKey))
 	if err != nil {
+		fmt.Println(err)
 		return errors.New("Error while creating a http request object")
 	}
-	httpRequest.Header.Set("Content-Type", "application/x-pem-file")
-	httpRequest.Header.Set("Authorization", "Token "+token)
-	_, err = k.kmsClient.DispatchRequest(httpRequest)
+   	httpRequest.Header.Set("Content-Type", "application/x-pem-file")
+	_, err = kc.DispatchRequest(httpRequest)
 	if err != nil {
+		fmt.Println(err)
 		return errors.New("Error while sending a PUT request with envelope public key")
 	}
+	
 	return nil
 }
 
-func getUserInfo() (client.UserInfo, string, error) {
-
-	var userInfo client.UserInfo
+func getUserInfo() (UserInfo, string, error) {
+    fmt.Println("Inside getUserInfo")
+	var userInfo UserInfo
 	var token string
-
-	token, err := client.GetAuthToken()
+	var certificateDigest [32]byte
+	cert, err := hex.DecodeString(config.Configuration.Kms.TLSSha256)
 	if err != nil {
+		log.Fatal(err)
+	}
+	copy(certificateDigest[:], cert)
+	kc := &kms.Client{
+		BaseURL:  config.Configuration.Kms.APIURL,
+		Username: config.Configuration.Kms.APIUsername,
+		Password: config.Configuration.Kms.APIPassword,
+		CertSha256 :&certificateDigest,
+	}
+	fmt.Println(kc.BaseURL)
+    fmt.Println(kc.Username)
+	fmt.Println(kc.Password)
+	err = kc.RefreshAuthToken()
+	if err != nil {
+		fmt.Println(err)
 		return userInfo, token, errors.New("Error while getting authentication token")
 	}
-
-	userInfo, err = client.GetKmsUser(token)
+    fmt.Println("Token inside register Envelope key")
+    fmt.Println(kc.AuthenticationToken.AuthorizationToken)
+	userInfo, err = GetKmsUser(kc.AuthenticationToken.AuthorizationToken)
 	if err != nil {
 		return userInfo, token, errors.New("Error while gettig the KMS user information")
 	}
