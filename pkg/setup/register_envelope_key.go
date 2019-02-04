@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
+	k "intel/isecl/lib/kms-client"
 	config "intel/isecl/wpm/config"
 	client "intel/isecl/wpm/pkg/kmsclient"
 	"io/ioutil"
@@ -62,6 +63,13 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 		logger.Error(e.Error())
 		return e
 	}
+
+	/*exampleClient := &k.Client{
+		BaseURL:  config.Configuration.Kms.APIURL,
+		Username: config.Configuration.Kms.APIUsername,
+		Password: config.Configuration.Kms.APIPassword,
+	}*/
+
 	publicKey, err := ioutil.ReadFile(config.Configuration.EnvelopePublickeyLocation)
 	if err != nil {
 		return errors.New("Error while reading the envelope public key")
@@ -76,16 +84,17 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 }
 
 func registerUserPubKey(publicKey []byte, userID string, token string) error {
-	requestURL := config.Configuration.Kms.
-		APIURL + "users/" + userID + "/transfer-key"
+	kmsClient := config.InitiliazeClient(config.Configuration.Kms.APIURL, config.Configuration.Kms.APIUsername, config.Configuration.Kms.APIPassword)
+	fmt.Println("Inside registerKey")
+	fmt.Println(kmsClient.BaseURL)
+	requestURL := config.Configuration.Kms.APIURL + "users/" + userID + "/transfer-key"
 	httpRequest, err := http.NewRequest("PUT", requestURL, bytes.NewBuffer(publicKey))
 	if err != nil {
 		return errors.New("Error while creating a http request object")
 	}
 	httpRequest.Header.Set("Content-Type", "application/x-pem-file")
 	httpRequest.Header.Set("Authorization", "Token "+token)
-
-	_, err = client.SendRequest(httpRequest)
+	_, err = k.kmsClient.DispatchRequest(httpRequest)
 	if err != nil {
 		return errors.New("Error while sending a PUT request with envelope public key")
 	}

@@ -2,6 +2,8 @@ package config
 
 import (
 	csetup "intel/isecl/lib/common/setup"
+	k "intel/isecl/lib/kms-client"
+	"io"
 	"os"
 	"time"
 
@@ -100,4 +102,12 @@ func init() {
 		yaml.NewDecoder(file).Decode(&Configuration)
 	}*/
 	LogWriter = os.Stdout
+}
+
+func InitiliazeClient(url string, username string, password string) *k.Client {
+	return &k.Client{
+		BaseURL:  url,
+		Username: username,
+		Password: password,
+	}
 }
