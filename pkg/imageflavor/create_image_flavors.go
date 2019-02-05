@@ -97,28 +97,3 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 	return "", err
 
 }
-
-/*
-func createKey() (*kms.KeyInfo, error) {
-	var keyInfo kms.KeyInfo
-	keyInfo.Algorithm = "AES"
-	keyInfo.KeyLength = 256
-	keyInfo.CipherMode = "GCM"
-	key, err := kc.Keys().Create(keyInfo)
-	if err != nil {
-		logger.Error("Error creating key")
-		return key, errors.New("Error creating key.")
-	}
-	return key, nil
-
-}
-
-func retrieveKey(keyID string) ([]byte, error) {
-	kc := initializeClient()
-	key, err := kc.Key(keyID).Retrieve()
-	if err != nil {
-		logger.Error("Error retrieving key")
-		return key, errors.New("Error retrieving key.")
-	}
-	return key, nil
-}*/
