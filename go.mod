@@ -11,7 +11,4 @@ require (
 replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common v1.0/develop
 replace intel/isecl/lib/flavor => gitlab.devtools.intel.com/sst/isecl/lib/flavor v0.0.0-20181206181952-1ec1e81fed41
 
-//replace intel/isecl/lib/kms-client => gitlab.devtools.intel.com/sst/isecl/lib/kms-client v1.0/features/addCodefromWPM
-
-
-replace intel/isecl/lib/kms-client => /root/Gorepos/kms-client
+replace intel/isecl/lib/kms-client => gitlab.devtools.intel.com/sst/isecl/lib/kms-client v0.0.0-20190205015703-57d89d60bd9d

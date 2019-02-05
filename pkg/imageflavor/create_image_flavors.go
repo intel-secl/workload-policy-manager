@@ -7,21 +7,23 @@ package imageflavor
  */
 import (
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	t "intel/isecl/lib/common/tls"
 	"fmt"
+	t "intel/isecl/lib/common/tls"
 	flavor "intel/isecl/lib/flavor"
+	kms "intel/isecl/lib/kms-client"
 	config "intel/isecl/wpm/config"
+	"intel/isecl/wpm/consts"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strings"
-	"intel/isecl/lib/kms-client"
-	"crypto/tls"
-	"net/http"
+
 	logger "github.com/sirupsen/logrus"
 )
 
@@ -36,43 +38,38 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 	if len(strings.TrimSpace(imagePath)) <= 0 {
 		log.Fatal("image path not given")
 	}
-	
 
 	if len(strings.TrimSpace(encryptFilePath)) <= 0 {
 		log.Fatal("encryption file path not given")
 	}
-  
 
 	// check if image exists at the specified location
 	_, err = os.Stat(imagePath)
 	if os.IsNotExist(err) {
 		log.Fatal("image file does not exist")
 	}
-	
+
 	//create key if keyId is not specified in input
 	if len(strings.TrimSpace(keyID)) <= 0 {
-		keyInformation,err := createKey()
-		if err!=nil{
-			
+		keyInformation, err := createKey()
+		if err != nil {
 			log.Fatal("Error in creating transfer key")
-            return "" ,err
+			return "", err
 		}
-	   	keyValue,err = retrieveKey(keyInformation.KeyID)
-		if err!=nil{
-			log.Fatal("Error in retrieving transfer key")
-            return "" ,err
-		}
-	} else {
-		//retrieve key using keyid
-		keyValue,err = retrieveKey(keyID)
-		if err!=nil{
-			log.Fatal("Error in retrieving transfer key")
-            return "" ,err
-		}
+		keyID = keyInformation.KeyID
+		fmt.Println("Inside if for create key keyID")
+		fmt.Println(keyID)
 	}
-   
+
+	//retrieve key using keyid
+	keyValue, err = retrieveKey(keyID)
+	if err != nil {
+		log.Fatal("Error in retrieving transfer key")
+		return "", err
+	}
+
 	// encrypt image using key
-	err = encrypt(imagePath, config.Configuration.EnvelopePrivatekeyLocation, encryptFilePath, keyValue)
+	err = encrypt(imagePath, consts.EnvelopePrivatekeyLocation, encryptFilePath, keyValue)
 	if err != nil {
 		log.Fatal("Error in encrypting image.", err)
 	}
@@ -103,32 +100,32 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 
 }
 
-func createKey() (*kms.KeyInfo,error) {
-	var keyInfo kms.KeyInfo	
+func createKey() (*kms.KeyInfo, error) {
+	var keyInfo kms.KeyInfo
 	kc := initializeClient()
-	keyInfo.Algorithm = "AES"	
-	keyInfo.KeyLength =  256
-	keyInfo.CipherMode ="GCM"
+	keyInfo.Algorithm = "AES"
+	keyInfo.KeyLength = 256
+	keyInfo.CipherMode = "GCM"
 	key, err := kc.Keys().Create(keyInfo)
-	if err!=nil{
+	if err != nil {
 		logger.Error("Error creating key")
-		return key , errors.New("Error creating key.")
+		return key, errors.New("Error creating key.")
 	}
-	return key,nil
-	
+	return key, nil
+
 }
 
-func retrieveKey(keyID string) ([]byte,error) {
+func retrieveKey(keyID string) ([]byte, error) {
 	kc := initializeClient()
 	key, err := kc.Key(keyID).Retrieve()
-	if err!=nil{
+	if err != nil {
 		logger.Error("Error retrieving key")
-		return key , errors.New("Error retrieving key.")
+		return key, errors.New("Error retrieving key.")
 	}
-	return key,nil
+	return key, nil
 }
 
-func initializeClient() (*kms.Client) {
+func initializeClient() *kms.Client {
 	var certificateDigest [32]byte
 	cert, err := hex.DecodeString(config.Configuration.Kms.TLSSha256)
 	if err != nil {
@@ -136,19 +133,19 @@ func initializeClient() (*kms.Client) {
 	}
 	copy(certificateDigest[:], cert)
 	client := &http.Client{
-					Transport: &http.Transport{
-						TLSClientConfig: &tls.Config{
-							InsecureSkipVerify: true,
-							VerifyPeerCertificate: t.VerifyCertBySha256(certificateDigest),
-						},
-					},
-				}
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify:    true,
+				VerifyPeerCertificate: t.VerifyCertBySha256(certificateDigest),
+			},
+		},
+	}
 	kc := &kms.Client{
-		BaseURL:  config.Configuration.Kms.APIURL,
-		Username: config.Configuration.Kms.APIUsername,
-		Password: config.Configuration.Kms.APIPassword,
-		CertSha256 :&certificateDigest,
-        HTTPClient: client,
+		BaseURL:    config.Configuration.Kms.APIURL,
+		Username:   config.Configuration.Kms.APIUsername,
+		Password:   config.Configuration.Kms.APIPassword,
+		CertSha256: &certificateDigest,
+		HTTPClient: client,
 	}
 	return kc
 }

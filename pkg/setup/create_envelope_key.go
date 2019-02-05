@@ -6,11 +6,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/wpm/config"
+	"intel/isecl/wpm/consts"
 	"os"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type CreateEnvelopeKey struct {
@@ -28,10 +28,7 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 		log.Error(e.Error())
 		return e
 	}
-	savePrivateFileTo := "/opt/wpm/configuration/envelopePrivateKey.pem"
-	savePublicFileTo := "/opt/wpm/configuration/envelopePublicKey.pub"
 	bitSize := 2048
-
 	keyPair, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
 		return errors.New("Error while generating a new RSA key pair")
@@ -43,7 +40,7 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 		Bytes: x509.MarshalPKCS1PrivateKey(keyPair),
 	}
 
-	privateKeyFile, err := os.Create(savePrivateFileTo)
+	privateKeyFile, err := os.Create(consts.EnvelopePrivatekeyLocation)
 	if err != nil {
 		return errors.New("Error while creating a new file")
 	}
@@ -66,7 +63,7 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 		Bytes: pubkeyBytes,
 	}
 
-	publicKeyFile, err := os.Create(savePublicFileTo)
+	publicKeyFile, err := os.Create(consts.EnvelopePublickeyLocation)
 	if err != nil {
 		return errors.New("Error while creating a new file")
 	}
@@ -76,24 +73,17 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 	if err != nil {
 		return errors.New("Error while encoding the public key")
 	}
-
-	config.Configuration.EnvelopePrivatekeyLocation = savePrivateFileTo
-	config.Configuration.EnvelopePublickeyLocation = savePublicFileTo
-
 	return nil
 }
 
 // ValidateCreateKey method is used to check if the envelope keys exists on disk
 func (ek CreateEnvelopeKey) Validate(c csetup.Context) error {
-	privateKey := "/opt/wpm/configuration/envelopePrivateKey.pem"
-	publicKey := "/opt/wpm/configuration/envelopePublicKey.pub"
-
-	_, err := os.Stat(privateKey)
+	_, err := os.Stat(consts.EnvelopePrivatekeyLocation)
 	if os.IsNotExist(err) {
 		return errors.New("Private key exists")
 	}
 
-	_, err = os.Stat(publicKey)
+	_, err = os.Stat(consts.EnvelopePublickeyLocation)
 	if os.IsNotExist(err) {
 		return errors.New("Public key exists")
 	}

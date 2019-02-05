@@ -95,8 +95,8 @@ echo_info "Creating directory layout"
 
 # LOCAL CONFIGURATION
 directory_layout() {
-export WPM_CONFIGURATION=${WPM_CONFIGURATION:-/opt/wpm/configuration}
-export WPM_LOGS=${WPM_LOGS:-$WPM_HOME/logs}
+export WPM_CONFIGURATION=${WPM_CONFIGURATION:-/etc/wpm/configuration}
+export WPM_LOGS=${WPM_LOGS:-/var/log/wpm}
 export INSTALL_LOG_FILE=$WPM_LOGS/install.log
 }
 
