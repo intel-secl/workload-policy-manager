@@ -2,10 +2,9 @@ package imageflavor
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	config "intel/isecl/wpm/config"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateKey(t *testing.T) {

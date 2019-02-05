@@ -1,19 +1,15 @@
 package setup
 
 import (
-	"crypto/tls"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
-	logger "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	csetup "intel/isecl/lib/common/setup"
-	t "intel/isecl/lib/common/tls"
 	"intel/isecl/lib/kms-client"
 	config "intel/isecl/wpm/config"
 	"intel/isecl/wpm/consts"
+	"intel/isecl/wpm/pkg/kmsclient"
 	"io/ioutil"
-	"log"
-	"net/http"
 	"strings"
 )
 
@@ -22,87 +18,62 @@ type RegisterEnvelopeKey struct {
 
 // ValidateRegisterKey method is used to verify if the envelope key is registered with the KBS
 func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
-	return nil
-}
-
-// ValidateRegisterKey method is used to verify if the envelope key is registered with the KBS
-func ValidateRegisterKey() (string, bool) {
+	log.Info("Validating register envelope key.")
 	userInfo, err := getUserInfo()
 	if err != nil {
-		return "", true
-	}
-	if len(strings.TrimSpace(userInfo.TransferKeyPem)) < 0 {
-		return userInfo.UserID, true
+		return errors.New("user does not exist in KMS")
 	}
 	publicKey, err := ioutil.ReadFile(consts.EnvelopePublickeyLocation)
 	if err != nil {
-		return userInfo.UserID, true
+		return errors.New("error reading envelop key")
 	}
 	encodedPublicKey := base64.StdEncoding.EncodeToString(publicKey)
-	log.Println("encoded public key : ", encodedPublicKey)
-	log.Println("user pub key : ", userInfo.TransferKeyPem)
 	if strings.EqualFold(userInfo.TransferKeyPem, encodedPublicKey) {
-		return userInfo.UserID, false
+		return errors.New("validation failed. Certificates from WPM and KMS do not match")
 	}
-	return userInfo.UserID, true
+	return nil
+
 }
 
 //RegisterEnvelopeKey method is used to register the envelope public key with the KBS user
 func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
-	userID, isValidated := ValidateRegisterKey()
-	if !isValidated {
+	err := re.Validate(c)
+	if err != nil {
 		return errors.New("Envelope public key is already registered on KBS. Skipping this setup task....")
+	}
+
+	log.Info("Registering envelope key")
+
+	userInfo, err := getUserInfo()
+	if err != nil {
+		return errors.New("Error while gettig the KMS user information")
 	}
 
 	// save configuration from config.yml
 	e := config.SaveConfiguration(c)
 	if e != nil {
-		logger.Error(e.Error())
+		log.Error("Error saving configuration.")
 		return e
 	}
 	publicKey, err := ioutil.ReadFile(consts.EnvelopePublickeyLocation)
 	if err != nil {
 		return errors.New("Error while reading the envelope public key")
 	}
-	kc := initializeClient()
-	err = kc.Keys().RegisterUserPubKey(publicKey, userID)
+	kc := kmsclient.InitializeClient()
+	err = kc.Keys().RegisterUserPubKey(publicKey, userInfo.UserID)
 	if err != nil {
 		return errors.New("Error while updating the KBS user with envelope public key")
 	}
-	logger.Println("Envelop key registered successfully")
+	log.Info("Envelop key registered successfully")
 	return nil
 }
 
 func getUserInfo() (kms.UserInfo, error) {
 	var userInfo kms.UserInfo
-	kc := initializeClient()
+	kc := kmsclient.InitializeClient()
 	userInfo, err := kc.Keys().GetKmsUser()
 	if err != nil {
 		return userInfo, errors.New("Error while gettig the KMS user information")
 	}
 	return userInfo, nil
-}
-func initializeClient() *kms.Client {
-	var certificateDigest [32]byte
-	cert, err := hex.DecodeString(config.Configuration.Kms.TLSSha256)
-	if err != nil {
-		log.Fatal(err)
-	}
-	copy(certificateDigest[:], cert)
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify:    true,
-				VerifyPeerCertificate: t.VerifyCertBySha256(certificateDigest),
-			},
-		},
-	}
-	kc := &kms.Client{
-		BaseURL:    config.Configuration.Kms.APIURL,
-		Username:   config.Configuration.Kms.APIUsername,
-		Password:   config.Configuration.Kms.APIPassword,
-		CertSha256: &certificateDigest,
-		HTTPClient: client,
-	}
-	return kc
 }

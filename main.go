@@ -45,6 +45,7 @@ func main() {
 		}
 
 	case "create-image-flavor":
+		label := flag.String("l", "", "Label for flavor not given.")
 		inputImageFilePath := flag.String("i", "", "Input image file path.")
 		outputEncryptedImageFilePath := flag.String("p", "", "Output encrypted image file path.")
 		outputFlavorFilePath := flag.String("o", "", "Output flavor file path. If not specified, the "+
@@ -65,8 +66,13 @@ func main() {
 				"It is a required parameter.\n")
 			os.Exit(1)
 		}
-		fmt.Printf("inputImageFilePath: %s, outputEncryptedImageFilePath: %s, outputFlavorFilePath:"+
-			" %s, keyID: %s, isEncryRequired: %t\n", *inputImageFilePath, *outputEncryptedImageFilePath,
+		if *label == "" {
+			fmt.Printf("Please provide the input image file path using -l option. It is a " +
+				"required parameter.\n")
+			os.Exit(1)
+		}
+		fmt.Printf("label:%s, inputImageFilePath: %s, outputEncryptedImageFilePath: %s, outputFlavorFilePath:"+
+			" %s, keyID: %s, isEncryRequired: %t\n",*label, *inputImageFilePath, *outputEncryptedImageFilePath,
 			*outputFlavorFilePath, *inputKeyID, *isEncryRequired)
 
 		var keyID string
@@ -75,7 +81,7 @@ func main() {
 		} else {
 			keyID = ""
 		}
-		_, err := imageFlavor.CreateImageFlavor(*inputImageFilePath, *outputEncryptedImageFilePath,
+		_, err := imageFlavor.CreateImageFlavor(*label,*inputImageFilePath, *outputEncryptedImageFilePath,
 			keyID, *isEncryRequired, false, *outputFlavorFilePath)
 		if err != nil {
 			logger.Error("cannot create flavor")

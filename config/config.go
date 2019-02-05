@@ -29,6 +29,7 @@ var Configuration struct {
 // Save the configuration struct into configuration directory
 func Save() error {
 	file, err := os.OpenFile(consts.ConfigFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
+	defer file.Close()
 	if err != nil {
 		// we have an error
 		if os.IsNotExist(err) {
@@ -39,7 +40,6 @@ func Save() error {
 			}
 		}
 	}
-	defer file.Close()
 	return yaml.NewEncoder(file).Encode(consts.ConfigFilePath)
 }
 
@@ -84,7 +84,7 @@ var LogWriter io.Writer
 
 func init() {
 	// load from config
-	file, err := os.Open(consts.ConfigFilePath)
+	file, err := os.OpenFile(consts.ConfigFilePath,os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
 	if err == nil {
 		defer file.Close()
 		yaml.NewDecoder(file).Decode(&Configuration)
