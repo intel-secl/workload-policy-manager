@@ -6,13 +6,12 @@ import (
 	csetup "intel/isecl/lib/common/setup"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
 	"intel/isecl/wpm/pkg/setup"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
-
-	logger "github.com/sirupsen/logrus"
+     "intel/isecl/wpm/consts"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -72,7 +71,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("label:%s, inputImageFilePath: %s, outputEncryptedImageFilePath: %s, outputFlavorFilePath:"+
-			" %s, keyID: %s, isEncryRequired: %t\n",*label, *inputImageFilePath, *outputEncryptedImageFilePath,
+			" %s, keyID: %s, isEncryRequired: %t\n", *label, *inputImageFilePath, *outputEncryptedImageFilePath,
 			*outputFlavorFilePath, *inputKeyID, *isEncryRequired)
 
 		var keyID string
@@ -81,18 +80,21 @@ func main() {
 		} else {
 			keyID = ""
 		}
-		_, err := imageFlavor.CreateImageFlavor(*label,*inputImageFilePath, *outputEncryptedImageFilePath,
+		_, err := imageFlavor.CreateImageFlavor(*label, *inputImageFilePath, *outputEncryptedImageFilePath,
 			keyID, *isEncryRequired, false, *outputFlavorFilePath)
 		if err != nil {
-			logger.Error("cannot create flavor")
+			log.Error("cannot create flavor")
 		} else {
-			logger.Info("Image flavor created successfully")
+			log.Info("Image flavor created successfully")
 		}
 
 	case "uninstall":
-		logger.Info("Uninstalling WPM")
+		log.Info("Uninstalling WPM")
 		deleteFile("/usr/local/bin/wpm")
 		deleteFile("/opt/wpm/")
+		deleteFile(consts.ConfigDirPath)
+		deleteFile(consts.LogDirPath)
+		log.Info("WPM uninstalled successfully")
 
 	case "help", "-help", "--help":
 		usage()
@@ -131,9 +133,9 @@ func runCommand(cmd string, args []string) (string, error) {
 }
 
 func usage() {
-	fmt.Println("Usage: $0 uninstall|create-image-flavor|create-software-flavor")
-	fmt.Println("Usage: $0 setup [--force|--noexec] [task1 task2 ...]")
-	fmt.Println("Available setup tasks: CreateEnvelopKey and RegisterEnvelopeKeyWithKBS")
+	fmt.Printf("Usage: $0 uninstall|create-image-flavor|create-software-flavor")
+	fmt.Printf("Usage: $0 setup [--force|--noexec] [task1 task2 ...]")
+	fmt.Printf("Available setup tasks: CreateEnvelopKey and RegisterEnvelopeKeyWithKBS")
 }
 
 func isValidUUID(uuid string) bool {
@@ -142,11 +144,10 @@ func isValidUUID(uuid string) bool {
 }
 
 func deleteFile(path string) {
-	log.Println("Deleting file: ", path)
+	log.Info("Deleting file: ", path)
 	// delete file
 	var err = os.RemoveAll(path)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
-	log.Println("WPM uninstalled successfully")
 }

@@ -12,9 +12,9 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	flavor "intel/isecl/lib/flavor"
+	kms "intel/isecl/lib/kms-client"
 	"intel/isecl/wpm/consts"
 	"intel/isecl/wpm/pkg/kmsclient"
-	kms "intel/isecl/lib/kms-client"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -60,8 +60,6 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 			return "", err
 		}
 		keyID = key.KeyID
-		fmt.Println("Inside if for create key keyID")
-		fmt.Println(keyID)
 	}
 
 	//retrieve key using keyid

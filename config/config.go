@@ -26,9 +26,21 @@ var Configuration struct {
 	}
 }
 
+var LogWriter io.Writer
+
+func init() {
+	// load from config
+	file, err := os.Open(consts.ConfigFilePath)
+	if err == nil {
+		defer file.Close()
+		yaml.NewDecoder(file).Decode(&Configuration)
+	}
+	LogWriter = os.Stdout
+}
+
 // Save the configuration struct into configuration directory
 func Save() error {
-	file, err := os.OpenFile(consts.ConfigFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
+	file, err := os.OpenFile(consts.ConfigFilePath, os.O_RDWR, 0)
 	defer file.Close()
 	if err != nil {
 		// we have an error
@@ -40,7 +52,7 @@ func Save() error {
 			}
 		}
 	}
-	return yaml.NewEncoder(file).Encode(consts.ConfigFilePath)
+	return yaml.NewEncoder(file).Encode(Configuration)
 }
 
 // SaveConfiguration is used to save configurations that are provided in environment during setup tasks
@@ -78,16 +90,4 @@ func LogConfiguration() {
 	log.SetFormatter(&log.TextFormatter{FullTimestamp: true, TimestampFormat: time.RFC1123Z})
 	logMultiWriter := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(logMultiWriter)
-}
-
-var LogWriter io.Writer
-
-func init() {
-	// load from config
-	file, err := os.OpenFile(consts.ConfigFilePath,os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
-	if err == nil {
-		defer file.Close()
-		yaml.NewDecoder(file).Decode(&Configuration)
-	}
-	LogWriter = os.Stdout
 }
