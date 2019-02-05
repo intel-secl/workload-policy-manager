@@ -96,11 +96,11 @@ var LogWriter io.Writer
 
 func init() {
 	// load from config
-	/*file, err := os.Open(ConfigFilePath)
+	file, err := os.Open("/opt/wpm/configuration/config.yml")
 	if err == nil {
 		defer file.Close()
 		yaml.NewDecoder(file).Decode(&Configuration)
-	}*/
+	}
 	LogWriter = os.Stdout
 }
 

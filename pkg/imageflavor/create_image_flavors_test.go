@@ -13,25 +13,26 @@ func TestCreateKey(t *testing.T) {
 	config.Configuration.Kms.APIUsername = "kms-admin"
 	config.Configuration.Kms.APIPassword = "password"
 	config.Configuration.Kms.TLSSha256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
-	keyInfo := createKey()
+	keyInfo, err := createKey()
+	assert.Nil(t, err)
 	assert.NotNil(t, keyInfo)
-	fmt.Println(keyInfo.KeyID)
+	fmt.Println(keyInfo)
 }
 
 func TestRetrieveTransferKey(t *testing.T) {
 	config.Configuration.Kms.APIURL = "https://10.105.168.214:443/v1/"
-	config.Configuration.Kms.APIUsername = "admin"
+	config.Configuration.Kms.APIUsername = "kms-admin"
 	config.Configuration.Kms.APIPassword = "password"
 	config.Configuration.Kms.TLSSha256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
-	keyID := "1d7b080b-580a-4358-8ded-0b80923cf1db"
-	keyURL := config.Configuration.Kms.APIURL + "keys/" + keyID + "/transfer"
-	key := retrieveKey(keyURL)
+	keyID := "30054604-3e51-4ea1-8b5e-af0e9562f744"
+	key, err := retrieveKey(keyID)
+	assert.Nil(t, err)
 	assert.NotNil(t, key)
 	fmt.Println(key)
 }
 func TestCreateImageFlavor(t *testing.T) {
 	config.Configuration.Kms.APIURL = "https://10.105.168.214:443/v1/"
-	config.Configuration.Kms.APIUsername = "admin"
+	config.Configuration.Kms.APIUsername = "kms-admin"
 	config.Configuration.Kms.APIPassword = "password"
 	config.Configuration.EnvelopePrivatekeyLocation = "admin-privatekey.pem"
 	config.Configuration.Kms.TLSSha256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
@@ -42,7 +43,7 @@ func TestCreateImageFlavor(t *testing.T) {
 
 func TestCreateImageFlavorToFile(t *testing.T) {
 	config.Configuration.Kms.APIURL = "https://10.105.168.214:443/v1/"
-	config.Configuration.Kms.APIUsername = "admin"
+	config.Configuration.Kms.APIUsername = "kms-admin"
 	config.Configuration.Kms.APIPassword = "password"
 	config.Configuration.EnvelopePrivatekeyLocation = "admin-privatekey.pem"
 	config.Configuration.Kms.TLSSha256 = "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"

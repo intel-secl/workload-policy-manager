@@ -6,55 +6,42 @@ package imageflavor
  *
  */
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	t "intel/isecl/lib/common/tls"
 	"fmt"
 	flavor "intel/isecl/lib/flavor"
 	config "intel/isecl/wpm/config"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 	"intel/isecl/lib/kms-client"
-	//"unsafe"
+	"crypto/tls"
+	"net/http"
 	logger "github.com/sirupsen/logrus"
 )
-
-//KeyInfo is a representation of key information
-type KeyInfo struct {
-	KeyID           string `json:"id"`
-	CipherMode      string `json:"mode"`
-	Algorithm       string `json:"algorithm"`
-	KeyLength       int `json:"key_length"`
-	PaddingMode     string `json:"padding_mode"`
-	TransferPolicy  string `json:"transfer_policy"`
-	TransferLink    string `json:"transfer_link"`
-	DigestAlgorithm string `json:"digest_algorithm"`
-}
-
-//KeyObj is a represenation of the actual key
-type KeyObj struct {
-	Key []byte `json:"key"`
-}
 
 //CreateImageFlavor is used to create flavor of an encrypted image
 func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, encryptionRequired bool, integrityEnforced bool, outputFile string) (string, error) {
 	var err error
-	var key []byte
 	var keyURL string
+	var keyValue []byte
+
 	logger.Info("Creating image flavor")
 	//input validation
 	if len(strings.TrimSpace(imagePath)) <= 0 {
 		log.Fatal("image path not given")
 	}
+	
 
 	if len(strings.TrimSpace(encryptFilePath)) <= 0 {
 		log.Fatal("encryption file path not given")
 	}
+  
 
 	// check if image exists at the specified location
 	_, err = os.Stat(imagePath)
@@ -62,24 +49,30 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 		log.Fatal("image file does not exist")
 	}
 	
-
-	if err != nil {
-		log.Fatal("Error in generating authentication token.", err)
-	}
-
 	//create key if keyId is not specified in input
 	if len(strings.TrimSpace(keyID)) <= 0 {
-		keyInformation := createKey()
-		keyURL = config.Configuration.Kms.APIURL + "keys/" + keyInformation.KeyID + "/transfer"
-		key = retrieveKey(keyURL)
+		keyInformation,err := createKey()
+		if err!=nil{
+			
+			log.Fatal("Error in creating transfer key")
+            return "" ,err
+		}
+	   	keyValue,err = retrieveKey(keyInformation.KeyID)
+		if err!=nil{
+			log.Fatal("Error in retrieving transfer key")
+            return "" ,err
+		}
 	} else {
 		//retrieve key using keyid
-		keyURL = config.Configuration.Kms.APIURL + "keys/" + keyID + "/transfer"
-		key = retrieveKey(keyURL)
+		keyValue,err = retrieveKey(keyID)
+		if err!=nil{
+			log.Fatal("Error in retrieving transfer key")
+            return "" ,err
+		}
 	}
-
+   
 	// encrypt image using key
-	err = encrypt(imagePath, config.Configuration.EnvelopePrivatekeyLocation, encryptFilePath, key)
+	err = encrypt(imagePath, config.Configuration.EnvelopePrivatekeyLocation, encryptFilePath, keyValue)
 	if err != nil {
 		log.Fatal("Error in encrypting image.", err)
 	}
@@ -110,85 +103,52 @@ func CreateImageFlavor(imagePath string, encryptFilePath string, keyID string, e
 
 }
 
-func createKey() KeyInfo {
-	var url string
-	var keyObj KeyInfo
+func createKey() (*kms.KeyInfo,error) {
+	var keyInfo kms.KeyInfo	
 	kc := initializeClient()
-	fmt.Println(kc.BaseURL)
-	fmt.Println(kc.Username)
-	fmt.Println(kc.Password)
-	logger.Info("Creating transfer key")
-	url = config.Configuration.Kms.APIURL + "keys"
-	requestBody := []byte(`{"algorithm": "AES","key_length": "256","mode": "GCM"}`)
-	// set POST request Accept, Content-Type and Authorization headers
-	httpRequest, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
-	httpRequest.Header.Set("Accept", "application/json")
-	httpRequest.Header.Set("Content-Type", "application/json")
-
-	httpResponse, err := kc.DispatchRequest(httpRequest)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal("Error in key creation. ", err)
+	keyInfo.Algorithm = "AES"	
+	keyInfo.KeyLength =  256
+	keyInfo.CipherMode ="GCM"
+	key, err := kc.Keys().Create(keyInfo)
+	if err!=nil{
+		logger.Error("Error creating key")
+		return key , errors.New("Error creating key.")
 	}
-	fmt.Println(httpResponse)
-	fmt.Println(httpResponse.Body)
+	return key,nil
 	
-	//deserialize the response to KeyInfo
-	if err := json.NewDecoder(httpResponse.Body).Decode(&keyObj); err != nil {
-		log.Fatal("Error in marshalling. ",err)
-	}
-	//err = json.NewDecoder(response).Decode(&keyObj)
-	//fmt.Println(err)
-    //err = json.Unmarshal(response, &keyObj)
-	fmt.Println("Response returned")
-	fmt.Println(err)
-	fmt.Println(keyObj.KeyID)
-	return keyObj
 }
 
-func retrieveKey(keyURL string) []byte {
-	var keyValue KeyObj
-	logger.Info("Retrieving transfer key")
-	// set POST request Accept, Content-Type and Authorization headers
+func retrieveKey(keyID string) ([]byte,error) {
 	kc := initializeClient()
-	httpRequest, err := http.NewRequest("POST", keyURL, nil)
-	httpRequest.Header.Set("Accept", "application/json")
-	httpRequest.Header.Set("Content-Type", "application/json")
-	
-	if err != nil {
-		log.Fatal(err)
+	key, err := kc.Key(keyID).Retrieve()
+	if err!=nil{
+		logger.Error("Error retrieving key")
+		return key , errors.New("Error retrieving key.")
 	}
-	httpResponse, err := kc.DispatchRequest(httpRequest)
-	fmt.Println(httpResponse.Body)
-	if err != nil {
-		log.Fatal("Error in key retrieval. ", err)
-	}
-	fmt.Println(httpResponse)
-	fmt.Println(httpResponse.Body)
-	//deserialize the response to KeyInfo
-	if err := json.NewDecoder(httpResponse.Body).Decode(&keyValue); err != nil {
-		fmt.Println(err)
-		log.Fatal("Error in marshalling. ",err)
-	}
-	fmt.Println(keyValue)
-	//_ = json.Unmarshal(response, &keyValue)
-	fmt.Println(keyValue.Key)
-	return keyValue.Key
+	return key,nil
 }
 
 func initializeClient() (*kms.Client) {
-	fmt.Println("Inside initializeClient")
 	var certificateDigest [32]byte
 	cert, err := hex.DecodeString(config.Configuration.Kms.TLSSha256)
 	if err != nil {
 		log.Fatal(err)
 	}
 	copy(certificateDigest[:], cert)
+	client := &http.Client{
+					Transport: &http.Transport{
+						TLSClientConfig: &tls.Config{
+							InsecureSkipVerify: true,
+							VerifyPeerCertificate: t.VerifyCertBySha256(certificateDigest),
+						},
+					},
+				}
 	kc := &kms.Client{
 		BaseURL:  config.Configuration.Kms.APIURL,
 		Username: config.Configuration.Kms.APIUsername,
 		Password: config.Configuration.Kms.APIPassword,
-        CertSha256 :&certificateDigest,
+		CertSha256 :&certificateDigest,
+        HTTPClient: client,
 	}
 	return kc
 }
