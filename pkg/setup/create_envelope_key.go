@@ -16,12 +16,23 @@ import (
 type CreateEnvelopeKey struct {
 }
 
-func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
+// ValidateCreateKey method is used to check if the envelope keys exists on disk
+func (ek CreateEnvelopeKey) Validate(c csetup.Context) error {
+	
+	log.Info("Validating creating envelope key")
+	_, err := os.Stat(consts.EnvelopePrivatekeyLocation)
+	if os.IsNotExist(err) {
+		return errors.New("private key does not exist")
+	}
+	_, err = os.Stat(consts.EnvelopePublickeyLocation)
+	if os.IsNotExist(err) {
+		return errors.New("public key does not exist")
+	}
+	return nil
+}
 
-	/*if ek.Validate(c) != nil {
-		fmt.Println("Envelope key already created. Skipping this setup task.")
-		return nil
-	}*/
+func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
+	log.Info("Creating envelope key")
 	// save configuration from config.yml
 	e := config.SaveConfiguration(c)
 	if e != nil {
@@ -55,9 +66,8 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 
 	pubkeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {
-		return errors.New("Error while getting the public key from private key")
+		return errors.New("Error while marshalling the public key")
 	}
-
 	var publicKeyInPem = &pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: pubkeyBytes,
@@ -72,20 +82,6 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 	err = pem.Encode(publicKeyFile, publicKeyInPem)
 	if err != nil {
 		return errors.New("Error while encoding the public key")
-	}
-	return nil
-}
-
-// ValidateCreateKey method is used to check if the envelope keys exists on disk
-func (ek CreateEnvelopeKey) Validate(c csetup.Context) error {
-	_, err := os.Stat(consts.EnvelopePrivatekeyLocation)
-	if os.IsNotExist(err) {
-		return errors.New("Private key exists")
-	}
-
-	_, err = os.Stat(consts.EnvelopePublickeyLocation)
-	if os.IsNotExist(err) {
-		return errors.New("Public key exists")
 	}
 	return nil
 }

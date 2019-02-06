@@ -9,7 +9,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	flavor "intel/isecl/lib/flavor"
 	kms "intel/isecl/lib/kms-client"
@@ -88,11 +87,14 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 		return string(jsonFlavor), nil
 	}
 	//create outputFile for image flavor
-	_, _ = os.Create(outputFile)
+	_, err = os.Create(outputFile)
+	if err!=nil{
+		log.Error("Error creating output file.",err)
+	}
 
 	_ = ioutil.WriteFile(outputFile, []byte(jsonFlavor), 0600)
 	if err != nil {
-		log.Error("Error writing image flavor to output file")
+		log.Error("Error writing image flavor to output file.",err)
 	}
 	return "", err
 
