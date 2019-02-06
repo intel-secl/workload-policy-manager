@@ -32,9 +32,11 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 	if len(strings.TrimSpace(imagePath)) <= 0 {
 		return "", errors.New("image path not given")
 	}
+
 	if len(strings.TrimSpace(label)) <= 0 {
 		return "", errors.New("label for flavor not given")
 	}
+
 	if len(strings.TrimSpace(encryptFilePath)) <= 0 {
 		return "", errors.New("encryption file path not given")
 	}
@@ -77,7 +79,7 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 		return "", errors.New("error in encrypting image.")
 	}
 	encryptedImage, err := ioutil.ReadFile(encryptFilePath)
-	{
+	if err != nil {
 		log.Error(err)
 		return "", errors.New("error reading from input file.")
 	}
@@ -90,6 +92,7 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 		log.Error(err)
 		return "", errors.New("error in creating image flavor.")
 	}
+
 	jsonFlavor, err := json.Marshal(imageFlavor)
 	if len(strings.TrimSpace(outputFile)) <= 0 {
 		return string(jsonFlavor), nil
@@ -101,11 +104,10 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 		return "", errors.New("error creating output file.")
 	}
 
-	_ = ioutil.WriteFile(outputFile, []byte(jsonFlavor), 0600)
+	err = ioutil.WriteFile(outputFile, []byte(jsonFlavor), 0600)
 	if err != nil {
 		log.Error(err)
 		return "", errors.New("error writing image flavor to output file.")
 	}
 	return "", err
-
 }
