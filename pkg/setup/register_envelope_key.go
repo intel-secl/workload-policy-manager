@@ -14,11 +14,12 @@ import (
 	"intel/isecl/wpm/pkg/kmsclient"
 	"io/ioutil"
 	"strings"
+	"fmt"
 )
 
 type RegisterEnvelopeKey struct {
-	UserInformation kms.UserInfo
 }
+var UserInformation kms.UserInfo
 
 // ValidateRegisterKey method is used to verify if the envelope key is registered with the KBS
 func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
@@ -26,8 +27,10 @@ func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
 	var wpmPublicKey *rsa.PublicKey
 
 	log.Info("Validating register envelope key.")
+	fmt.Println("Inside Validate")
+	fmt.Println(UserInformation.Username)
 
-	if len(strings.TrimSpace(re.UserInformation.TransferKeyPem)) <= 0 {
+	if len(strings.TrimSpace(UserInformation.TransferKeyPem)) <= 0 {
 		return nil
 	}
 
@@ -48,7 +51,7 @@ func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
 		return errors.New("public key not in RSA format")
 	}
 
-	block, _ := pem.Decode([]byte(re.UserInformation.TransferKeyPem))
+	block, _ := pem.Decode([]byte(UserInformation.TransferKeyPem))
 
 	cert, err = x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -66,7 +69,7 @@ func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
 //RegisterEnvelopeKey method is used to register the envelope public key with the KBS user
 func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 	log.Info("Registering envelope key")
-
+    
 	// save configuration from config.yml
 	e := config.SaveConfiguration(c)
 	if e != nil {
@@ -81,12 +84,14 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 
 	kc := kmsclient.InitializeClient()
 
-	re.UserInformation, err = getUserInfo()
+	UserInformation, err = getUserInfo()
 	if err != nil {
 		return errors.New("user does not exist in KMS")
 	}
+	fmt.Println("Inside Run")
+	fmt.Println(UserInformation.Username)
 
-	err = kc.Keys().RegisterUserPubKey(publicKey, re.UserInformation.UserID)
+	err = kc.Keys().RegisterUserPubKey(publicKey, UserInformation.UserID)
 	if err != nil {
 		return errors.New("error while updating the KBS user with envelope public key")
 	}
