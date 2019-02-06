@@ -14,7 +14,6 @@ import (
 	"intel/isecl/wpm/pkg/kmsclient"
 	"io/ioutil"
 	"strings"
-	"fmt"
 )
 
 type RegisterEnvelopeKey struct {
@@ -27,8 +26,6 @@ func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
 	var wpmPublicKey *rsa.PublicKey
 
 	log.Info("Validating register envelope key.")
-	fmt.Println("Inside Validate")
-	fmt.Println(UserInformation.Username)
 
 	if len(strings.TrimSpace(UserInformation.TransferKeyPem)) <= 0 {
 		return nil
@@ -38,7 +35,7 @@ func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
 	if err != nil {
 		return errors.New("error reading envelop key from file.")
 	}
-
+    
 	publicKeyDecoded, _ := pem.Decode(publicKey)
 
 	parsedPublicKey, err := x509.ParsePKIXPublicKey(publicKeyDecoded.Bytes)
@@ -88,8 +85,6 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 	if err != nil {
 		return errors.New("user does not exist in KMS")
 	}
-	fmt.Println("Inside Run")
-	fmt.Println(UserInformation.Username)
 
 	err = kc.Keys().RegisterUserPubKey(publicKey, UserInformation.UserID)
 	if err != nil {
