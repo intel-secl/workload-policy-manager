@@ -3,15 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	csetup "intel/isecl/lib/common/setup"
+	"intel/isecl/wpm/config"
+	"intel/isecl/wpm/consts"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
 	"intel/isecl/wpm/pkg/setup"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
-     "intel/isecl/wpm/consts"
-	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -20,6 +21,10 @@ func main() {
 		usage()
 		return
 	}
+
+	// Save log configurations
+	config.LogConfiguration()
+
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
 		// Check if nosetup environment variable is true, if yes then skip the setup tasks

@@ -18,7 +18,7 @@ type CreateEnvelopeKey struct {
 
 // ValidateCreateKey method is used to check if the envelope keys exists on disk
 func (ek CreateEnvelopeKey) Validate(c csetup.Context) error {
-	
+
 	log.Info("Validating creating envelope key")
 	_, err := os.Stat(consts.EnvelopePrivatekeyLocation)
 	if os.IsNotExist(err) {
@@ -53,12 +53,14 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 
 	privateKeyFile, err := os.Create(consts.EnvelopePrivatekeyLocation)
 	if err != nil {
-		return errors.New("Error while creating a new file")
+		log.Error(err)
+		return errors.New("error while creating a new file")
 	}
 	defer privateKeyFile.Close()
 	err = pem.Encode(privateKeyFile, privateKey)
 	if err != nil {
-		return errors.New("Error while encoding the private key")
+		log.Error(err)
+		return errors.New("error while encoding the private key")
 	}
 
 	// save public key
@@ -66,7 +68,8 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 
 	pubkeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {
-		return errors.New("Error while marshalling the public key")
+		log.Error(err)
+		return errors.New("error while marshalling the public key")
 	}
 	var publicKeyInPem = &pem.Block{
 		Type:  "PUBLIC KEY",
@@ -75,13 +78,15 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 
 	publicKeyFile, err := os.Create(consts.EnvelopePublickeyLocation)
 	if err != nil {
-		return errors.New("Error while creating a new file")
+		log.Error(err)
+		return errors.New("error while creating a new file")
 	}
 	defer publicKeyFile.Close()
 
 	err = pem.Encode(publicKeyFile, publicKeyInPem)
 	if err != nil {
-		return errors.New("Error while encoding the public key")
+		log.Error(err)
+		return errors.New("error while encoding the public key")
 	}
 	return nil
 }

@@ -1,20 +1,20 @@
 package kmsclient
 
 import (
-	log "github.com/sirupsen/logrus"
+	"crypto/tls"
 	"encoding/hex"
+	log "github.com/sirupsen/logrus"
+	t "intel/isecl/lib/common/tls"
 	kms "intel/isecl/lib/kms-client"
 	config "intel/isecl/wpm/config"
 	"net/http"
-	"crypto/tls"
-	t "intel/isecl/lib/common/tls"
 )
 
 func InitializeClient() *kms.Client {
 	var certificateDigest [32]byte
 	certDigestHex, err := hex.DecodeString(config.Configuration.Kms.TLSSha256)
 	if err != nil {
-		log.Error("Error converting certificate digest to hex")
+		log.Error("error converting certificate digest to hex")
 	}
 	copy(certificateDigest[:], certDigestHex)
 	client := &http.Client{
