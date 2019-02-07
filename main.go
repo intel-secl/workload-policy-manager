@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ func main() {
 	// Save log configurations
 	err := config.LogConfiguration()
 	if err != nil {
-      log.Error("error in configuring logs.")
+		log.Error("error in configuring logs.")
 	}
 
 	switch arg := strings.ToLower(args[0]); arg {
@@ -97,12 +98,11 @@ func main() {
 		}
 
 	case "uninstall":
-		log.Info("Uninstalling WPM")
-		deleteFile("/usr/local/bin/wpm")
-		deleteFile("/opt/wpm/")
-		deleteFile(consts.ConfigDirPath)
-		deleteFile(consts.LogDirPath)
-		log.Info("WPM uninstalled successfully")
+		fmt.Println("Uninstalling WPM")
+		_, fileNames := deleteFiles("/usr/local/bin/wpm", consts.WPM_HOME, consts.ConfigDirPath, consts.LogDirPath)
+		if len(fileNames) > 0 {
+			fmt.Printf("Could not delete files %s \n", fileNames)
+		}
 
 	case "help", "-help", "--help":
 		usage()
@@ -150,12 +150,18 @@ func isValidUUID(uuid string) bool {
 	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
 	return r.MatchString(uuid)
 }
-
-func deleteFile(path string) {
-	log.Info("Deleting file: ", path)
-	// delete file
-	var err = os.RemoveAll(path)
-	if err != nil {
-		log.Error(err)
+func deleteFiles(filePath ...string) (error, string) {
+	fileNames := ""
+	for _, path := range filePath {
+		err := os.RemoveAll(path)
+		fmt.Printf("Deleting files : %s \n", path)
+		if err != nil {
+			fileNames += path
+		}
 	}
+	if len(fileNames) > 0 {
+		return errors.New("error deleting files"), fileNames
+	}
+	return nil, fileNames
+
 }

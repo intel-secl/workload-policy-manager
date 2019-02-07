@@ -8,6 +8,7 @@ const (
 	KMS_ENCRYPTION_ALG         = "AES"
 	KMS_KEY_LENGTH             = 256
 	KMS_CIPHER_MODE            = "GCM"
+	WPM_HOME                   = "/opt/wpm/"
 	ConfigFilePath             = "/etc/wpm/config.yml"
 	ConfigDirPath              = "/etc/wpm/"
 	LogDirPath                 = "/var/log/wpm/"
