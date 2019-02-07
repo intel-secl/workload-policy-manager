@@ -99,9 +99,10 @@ func main() {
 
 	case "uninstall":
 		fmt.Println("Uninstalling WPM")
-		_, fileNames := deleteFiles("/usr/local/bin/wpm", consts.WPM_HOME, consts.ConfigDirPath, consts.LogDirPath)
-		if len(fileNames) > 0 {
-			fmt.Printf("Could not delete files %s \n", fileNames)
+		errorFiles, err := deleteFiles("/usr/local/bin/wpm", consts.WPM_HOME, consts.ConfigDirPath, consts.LogDirPath)
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println(errorFiles)
 		}
 
 	case "help", "-help", "--help":
@@ -150,18 +151,18 @@ func isValidUUID(uuid string) bool {
 	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
 	return r.MatchString(uuid)
 }
-func deleteFiles(filePath ...string) (error, string) {
-	fileNames := ""
+func deleteFiles(filePath ...string) (errorFiles []string, err error) {
+	
 	for _, path := range filePath {
 		err := os.RemoveAll(path)
 		fmt.Printf("Deleting files : %s \n", path)
 		if err != nil {
-			fileNames += path
+			errorFiles = append(errorFiles, path)
 		}
 	}
-	if len(fileNames) > 0 {
-		return errors.New("error deleting files"), fileNames
+	if len(errorFiles) > 0 {
+		return errorFiles, errors.New("error deleting files")
 	}
-	return nil, fileNames
+	return nil, nil
 
 }
