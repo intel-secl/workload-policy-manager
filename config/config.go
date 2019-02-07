@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 	csetup "intel/isecl/lib/common/setup"
@@ -79,15 +79,16 @@ func SaveConfiguration(c csetup.Context) error {
 }
 
 // LogConfiguration is used to setup log configurations
-func LogConfiguration() {
+func LogConfiguration() error {
 	// creating the log file if not preset
 	LogFilePath := consts.LogDirPath + consts.LogFileName
 	logFile, err := os.OpenFile(LogFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
 	if err != nil {
-		fmt.Println("unable to write file ", err)
-		return
+		return errors.New("unable to write file. " + err.Error())
 	}
 	log.SetFormatter(&log.TextFormatter{FullTimestamp: true, TimestampFormat: time.RFC1123Z})
 	logMultiWriter := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(logMultiWriter)
+
+	return nil
 }

@@ -18,6 +18,7 @@ import (
 
 type RegisterEnvelopeKey struct {
 }
+
 var UserInformation kms.UserInfo
 
 // ValidateRegisterKey method is used to verify if the envelope key is registered with the KBS
@@ -35,12 +36,12 @@ func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
 	if err != nil {
 		return errors.New("error reading envelop key from file.")
 	}
-    
+
 	publicKeyDecoded, _ := pem.Decode(publicKey)
 
 	parsedPublicKey, err := x509.ParsePKIXPublicKey(publicKeyDecoded.Bytes)
 	if err != nil {
-		return errors.New("could not parse public key from PEM decoded content")
+		return errors.New("could not parse public key from PEM decoded content. " + err.Error())
 	}
 
 	wpmPublicKey, isRsaType := parsedPublicKey.(*rsa.PublicKey)
@@ -52,7 +53,7 @@ func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
 
 	cert, err = x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return errors.New("could not parse public key from PEM decoded content")
+		return errors.New("could not parse public key from PEM decoded content" + err.Error())
 	}
 
 	kmsPublicKey := cert.PublicKey.(*rsa.PublicKey)
@@ -66,12 +67,11 @@ func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
 //RegisterEnvelopeKey method is used to register the envelope public key with the KBS user
 func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 	log.Info("Registering envelope key")
-    
+
 	// save configuration from config.yml
 	e := config.SaveConfiguration(c)
 	if e != nil {
-		log.Error("error saving configuration")
-		return e
+		return errors.New("error saving configuration. " + e.Error())
 	}
 
 	publicKey, err := ioutil.ReadFile(consts.EnvelopePublickeyLocation)
@@ -79,7 +79,10 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 		return errors.New("error while reading the envelope public key")
 	}
 
-	kc := kmsclient.InitializeClient()
+	kc, err := kmsclient.InitializeClient()
+	if err != nil {
+		return errors.New("error initializing KMS client.")
+	}
 
 	UserInformation, err = getUserInfo()
 	if err != nil {
@@ -88,7 +91,7 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 
 	err = kc.Keys().RegisterUserPubKey(publicKey, UserInformation.UserID)
 	if err != nil {
-		return errors.New("error while updating the KBS user with envelope public key")
+		return errors.New("error while updating the KBS user with envelope public key. " + err.Error())
 	}
 
 	log.Info("Envelop key registered successfully")
@@ -97,11 +100,14 @@ func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 
 func getUserInfo() (kms.UserInfo, error) {
 	var userInfo kms.UserInfo
-	kc := kmsclient.InitializeClient()
-
-	userInfo, err := kc.Keys().GetKmsUser()
+	kc, err := kmsclient.InitializeClient()
 	if err != nil {
-		return userInfo, errors.New("error while gettig the KMS user information")
+		return userInfo, errors.New("error initializing KMS client.")
+	}
+
+	userInfo, err = kc.Keys().GetKmsUser()
+	if err != nil {
+		return userInfo, errors.New("error while gettig the KMS user information. " + err.Error())
 	}
 
 	return userInfo, nil

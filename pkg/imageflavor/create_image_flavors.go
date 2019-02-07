@@ -44,23 +44,24 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 	// check if image exists at the specified location
 	_, err = os.Stat(imagePath)
 	if os.IsNotExist(err) {
-		log.Error(err)
 		return "", errors.New("image file does not exist")
 	}
 
-	kc := kmsclient.InitializeClient()
+	kc, err := kmsclient.InitializeClient()
+	if err != nil {
+		return "", errors.New("error initializing KMS client.")
+	}
 
 	//create key if keyId is not specified in input
 	if len(strings.TrimSpace(keyID)) <= 0 {
-		//Iniliaze KeyInfo
+		//Initialize KeyInfo
 		keyInfo.Algorithm = consts.KMS_ENCRYPTION_ALG
 		keyInfo.KeyLength = consts.KMS_KEY_LENGTH
 		keyInfo.CipherMode = consts.KMS_CIPHER_MODE
 
 		key, err := kc.Keys().Create(keyInfo)
 		if err != nil {
-			log.Error(err)
-			return "", errors.New("Error in creating transfer key")
+			return "", errors.New("error in creating transfer key. " + err.Error())
 		}
 		keyID = key.KeyID
 	}
@@ -68,20 +69,17 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 	//retrieve key using keyid
 	keyValue, err = kc.Key(keyID).Retrieve()
 	if err != nil {
-		log.Error(err)
-		return "", errors.New("error in retrieving transfer key")
+		return "", errors.New("error in retrieving transfer key. " + err.Error())
 	}
 
 	// encrypt image using key
 	err = encrypt(imagePath, consts.EnvelopePrivatekeyLocation, encryptFilePath, keyValue)
 	if err != nil {
-		log.Error(err)
-		return "", errors.New("error in encrypting image.")
+		return "", errors.New("error in encrypting image. " + err.Error())
 	}
 	encryptedImage, err := ioutil.ReadFile(encryptFilePath)
 	if err != nil {
-		log.Error(err)
-		return "", errors.New("error reading from input file.")
+		return "", errors.New("error reading from input file")
 	}
 	//calculate SHA256 of the encrpted image
 	digest := sha256.Sum256([]byte(encryptedImage))
@@ -89,8 +87,7 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 	// create image flavor
 	imageFlavor, err := flavor.GetImageFlavor(label, encryptionRequired, keyURL, base64.StdEncoding.EncodeToString(digest[:]))
 	if err != nil {
-		log.Error(err)
-		return "", errors.New("error in creating image flavor.")
+		return "", errors.New("error in creating image flavor." + err.Error())
 	}
 
 	jsonFlavor, err := json.Marshal(imageFlavor)
@@ -100,13 +97,11 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 	//create outputFile for image flavor
 	_, err = os.Create(outputFile)
 	if err != nil {
-		log.Error(err)
-		return "", errors.New("error creating output file.")
+		return "", errors.New("error creating output file. " + err.Error())
 	}
 
 	err = ioutil.WriteFile(outputFile, []byte(jsonFlavor), 0600)
 	if err != nil {
-		log.Error(err)
 		return "", errors.New("error writing image flavor to output file.")
 	}
 	return "", err

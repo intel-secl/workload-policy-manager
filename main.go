@@ -23,7 +23,10 @@ func main() {
 	}
 
 	// Save log configurations
-	config.LogConfiguration()
+	err := config.LogConfiguration()
+	if err != nil {
+      log.Error("error in configuring logs.")
+	}
 
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
