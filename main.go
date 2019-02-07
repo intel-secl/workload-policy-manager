@@ -152,10 +152,8 @@ func isValidUUID(uuid string) bool {
 	return r.MatchString(uuid)
 }
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
-	
 	for _, path := range filePath {
 		err := os.RemoveAll(path)
-		fmt.Printf("Deleting files : %s \n", path)
 		if err != nil {
 			errorFiles = append(errorFiles, path)
 		}
