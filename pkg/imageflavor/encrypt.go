@@ -7,13 +7,19 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/binary"
 	"encoding/pem"
 	"errors"
+	"intel/isecl/lib/common/crypt"
 	"io"
 	"io/ioutil"
+	"unsafe"
+	"bytes"
 )
 
 func encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation string, wrappedKey []byte) error {
+
+	var encryptionHeader crypt.EncryptionHeader
 
 	// reading image file
 	image, err := ioutil.ReadFile(imagePath)
@@ -31,6 +37,7 @@ func encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation 
 	if err != nil {
 		return errors.New("error creating a cipher block")
 	}
+
 	// assigning a 12 byte empty array to store random value
 	iv := make([]byte, 12)
 	// reading random value into the byte array
@@ -38,10 +45,22 @@ func encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation 
 		return errors.New("error creating random IV value")
 	}
 
-	// encrypting the file(data) with IV value and appending
-	// the IV to the first 12 bytes of the encrypted file
-	ciphertext := gcm.Seal(iv, iv, image, nil)
-	err = ioutil.WriteFile(encryptedFileLocation, ciphertext, 0600)
+	copy(encryptionHeader.MagicText[:], crypt.EncryptionHeaderMagicText)
+	copy(encryptionHeader.EncryptionAlgorithm[:], crypt.GCMEncryptionAlgorithm)
+	copy(encryptionHeader.IV[:], iv)
+	copy(encryptionHeader.Version[:], crypt.EncryptionHeaderVersion)
+	encryptionHeader.OffsetInLittleEndian = uint32(unsafe.Sizeof(encryptionHeader))
+
+	encryptionHeaderSlice := &bytes.Buffer{}
+	err = binary.Write(encryptionHeaderSlice, binary.LittleEndian, encryptionHeader)
+	if err != nil {
+		return errors.New("error while writing encryption header struc values in to buffer")
+	}
+
+	// The first 44 bytes of the encrypted file is the encryption header and
+	// the rest is the data.
+	encryptedDataWithHeader := gcm.Seal(encryptionHeaderSlice.Bytes(), iv, image, nil)
+	err = ioutil.WriteFile(encryptedFileLocation, encryptedDataWithHeader, 0600)
 	if err != nil {
 		return errors.New("error during writing the encrypted image to file")
 	}

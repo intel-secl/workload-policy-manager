@@ -19,6 +19,12 @@ gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181218185421-b8d5dae998f
 gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181218185421-b8d5dae998f1/go.mod h1:QoBuIKg0Olk/c0420oq1X87FqNfzduAA38tFMqDRU+8=
 gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181219001924-c333b49a3b24 h1:45wIoseQvMLHtcZKqt0331HXju50KzPaQt27ojD9VKo=
 gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20181219001924-c333b49a3b24/go.mod h1:QoBuIKg0Olk/c0420oq1X87FqNfzduAA38tFMqDRU+8=
+gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20190205212636-f4dfec8e8112 h1:PrPcdwbwFDHHxnjGrZNL1RTBnXmbudt2ztiWNsLBKmI=
+gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20190205212636-f4dfec8e8112/go.mod h1:QoBuIKg0Olk/c0420oq1X87FqNfzduAA38tFMqDRU+8=
+gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20190206023741-f8f931a5661f h1:mdu53/jlOzjg7cZgtRns1H64w+1IsBqhx6/dti+1RDo=
+gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20190206023741-f8f931a5661f/go.mod h1:QoBuIKg0Olk/c0420oq1X87FqNfzduAA38tFMqDRU+8=
+gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20190207100923-aa4601115ea2 h1:2Gi7hv/Vzoev2yskx6NGJimXeYND4nOkqgxvGYqKnBs=
+gitlab.devtools.intel.com/sst/isecl/lib/common v0.0.0-20190207100923-aa4601115ea2/go.mod h1:QoBuIKg0Olk/c0420oq1X87FqNfzduAA38tFMqDRU+8=
 gitlab.devtools.intel.com/sst/isecl/lib/flavor v0.0.0-20181206181952-1ec1e81fed41 h1:Lcn5jx9SIzKgUoz+SnBtv27iYb63gkds3/Wukrbu5Dk=
 gitlab.devtools.intel.com/sst/isecl/lib/flavor v0.0.0-20181206181952-1ec1e81fed41/go.mod h1:fCTEU9j0ghUk5WedUJokcVkjOym9WdeXhakwa+gH8u0=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

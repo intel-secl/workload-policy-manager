@@ -49,7 +49,7 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 
 	kc, err := kmsclient.InitializeClient()
 	if err != nil {
-		return "", errors.New("error initializing KMS client.")
+		return "", errors.New("error initializing KMS client")
 	}
 
 	//create key if keyId is not specified in input
@@ -102,7 +102,7 @@ func CreateImageFlavor(label string, imagePath string, encryptFilePath string, k
 
 	err = ioutil.WriteFile(outputFile, []byte(jsonFlavor), 0600)
 	if err != nil {
-		return "", errors.New("error writing image flavor to output file.")
+		return "", errors.New("error writing image flavor to output file")
 	}
 	return "", err
 }
