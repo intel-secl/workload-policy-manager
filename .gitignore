@@ -1,4 +1,6 @@
+out/
 .idea
 *.exe
 *.html
 /target/*
+go.sum
