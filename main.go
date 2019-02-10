@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/wpm/config"
 	"intel/isecl/wpm/consts"
@@ -12,8 +11,10 @@ import (
 	"intel/isecl/wpm/pkg/setup"
 	"os"
 	"os/exec"
-	"regexp"
+	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -53,48 +54,27 @@ func main() {
 		}
 
 	case "create-image-flavor":
-		label := flag.String("l", "", "Label for flavor not given.")
-		inputImageFilePath := flag.String("i", "", "Input image file path.")
-		outputEncryptedImageFilePath := flag.String("p", "", "Output encrypted image file path.")
-		outputFlavorFilePath := flag.String("o", "", "Output flavor file path. If not specified, the "+
-			"command will output on console by default.")
-		inputKeyID := flag.String("id", "", "Specify Key ID to get the image encryption key. If not "+
-			"specified, it will create a key by default.")
-		isEncryRequired := flag.Bool("enc", false, "Boolean parameter to specify if image has to "+
-			"be encrypted on the host when it is downloaded from the cloud orchestrator.")
+		flavorLabel := flag.String("l", "", "flavor label")
+		flag.StringVar(flavorLabel, "label", "", "flavor label")
+		inputImageFilePath := flag.String("i", "", "input image file path")
+		flag.StringVar(inputImageFilePath, "in", "", "input image file path")
+		outputFlavorFilePath := flag.String("o", "", "output flavor file path")
+		flag.StringVar(outputFlavorFilePath, "out", "", "output flavor file path")
+		outputEncImageFilePath := flag.String("e", "", "output encrypted image file path")
+		flag.StringVar(outputEncImageFilePath, "encout", "", "output encrypted image file path")
+		keyID := flag.String("k", "", "existing key ID")
+		flag.StringVar(keyID, "key", "", "existing key ID")
+		flag.Usage = func() { fmt.Println(imageFlavor.Usage()) }
 		flag.CommandLine.Parse(os.Args[2:])
 
-		if *inputImageFilePath == "" {
-			fmt.Printf("Please provide the input image file path using -i option. It is a " +
-				"required parameter.\n")
-			os.Exit(1)
-		}
-		if *outputEncryptedImageFilePath == "" {
-			fmt.Printf("Please provide the output encrypted image file path using -p option. " +
-				"It is a required parameter.\n")
-			os.Exit(1)
-		}
-		if *label == "" {
-			fmt.Printf("Please provide the input image file path using -l option. It is a " +
-				"required parameter.\n")
-			os.Exit(1)
-		}
-		fmt.Printf("label:%s, inputImageFilePath: %s, outputEncryptedImageFilePath: %s, outputFlavorFilePath:"+
-			" %s, keyID: %s, isEncryRequired: %t\n", *label, *inputImageFilePath, *outputEncryptedImageFilePath,
-			*outputFlavorFilePath, *inputKeyID, *isEncryRequired)
-
-		var keyID string
-		if isValidUUID(*inputKeyID) {
-			keyID = *inputKeyID
-		} else {
-			keyID = ""
-		}
-		_, err := imageFlavor.CreateImageFlavor(*label, *inputImageFilePath, *outputEncryptedImageFilePath,
-			keyID, *isEncryRequired, false, *outputFlavorFilePath)
+		imageFlavor, err := imageFlavor.CreateImageFlavor(*flavorLabel, *outputFlavorFilePath, *inputImageFilePath,
+			*outputEncImageFilePath, *keyID, false)
 		if err != nil {
-			log.Error("cannot create flavor")
-		} else {
-			log.Info("Image flavor created successfully")
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+			os.Exit(1)
+		}
+		if len(imageFlavor) > 0 {
+			fmt.Println(imageFlavor)
 		}
 
 	case "uninstall":
@@ -147,10 +127,6 @@ func usage() {
 	fmt.Printf("Available setup tasks: CreateEnvelopKey and RegisterEnvelopeKeyWithKBS")
 }
 
-func isValidUUID(uuid string) bool {
-	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
-	return r.MatchString(uuid)
-}
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
 	for _, path := range filePath {
 		err := os.RemoveAll(path)
@@ -162,5 +138,4 @@ func deleteFiles(filePath ...string) (errorFiles []string, err error) {
 		return errorFiles, errors.New("error deleting files")
 	}
 	return nil, nil
-
 }

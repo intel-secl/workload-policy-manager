@@ -2,7 +2,8 @@ module intel/isecl/wpm
 
 require (
 	github.com/sirupsen/logrus v1.3.0
-	github.com/stretchr/testify v1.2.2
+	github.com/stretchr/testify v1.3.0
+	gopkg.in/yaml.v2 v2.2.2
 	intel/isecl/lib/common v0.0.0
 	intel/isecl/lib/flavor v0.0.0
 	intel/isecl/lib/kms-client v0.0.0
