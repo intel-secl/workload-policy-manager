@@ -89,11 +89,14 @@ func main() {
 
 	case "uninstall":
 		fmt.Println("Uninstalling WPM")
-		errorFiles, err := deleteFiles("/usr/local/bin/wpm", consts.WPM_HOME, consts.ConfigDirPath, consts.LogDirPath)
+		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
+			deleteFiles(consts.ConfigDirPath)
+		}
+		errorFiles, err := deleteFiles(consts.WpmSymLink, consts.OptDirPath, consts.ConfigDirPath, consts.LogDirPath)
 		if err != nil {
-			fmt.Println(err)
 			fmt.Println(errorFiles)
 		}
+
 	case "help", "-help", "--help":
 		usage()
 
@@ -151,6 +154,7 @@ func usage() {
 
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
 	for _, path := range filePath {
+		log.Info("\n Deleting : ", path)
 		err := os.RemoveAll(path)
 		if err != nil {
 			errorFiles = append(errorFiles, path)

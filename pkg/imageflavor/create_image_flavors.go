@@ -65,9 +65,9 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 
 		//If key ID is not specified, create a new key
 		if len(strings.TrimSpace(keyID)) <= 0 {
-			keyInfo.Algorithm = consts.KMS_ENCRYPTION_ALG
-			keyInfo.KeyLength = consts.KMS_KEY_LENGTH
-			keyInfo.CipherMode = consts.KMS_CIPHER_MODE
+			keyInfo.Algorithm = consts.KmsEncryptAlgo
+			keyInfo.KeyLength = consts.KmsKeyLength
+			keyInfo.CipherMode = consts.KmsCipherMode
 
 			key, err := kc.Keys().Create(keyInfo)
 			if err != nil {

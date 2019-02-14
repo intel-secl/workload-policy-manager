@@ -12,6 +12,7 @@ installer: workload-policy-manager
 	mkdir -p out/wpm
 	cp dist/linux/install.sh out/wpm/install.sh && chmod +x out/wpm/install.sh
 	cp out/workload-policy-manager out/wpm/workload-policy-manager
+	chmod +x out/wpm/workload-policy-manager
 	makeself out/wpm out/wpm-$(VERSION).bin "Workload Policy Manager $(VERSION)" ./install.sh
 
 all: installer

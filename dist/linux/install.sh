@@ -56,29 +56,14 @@ echo_info() {
 ############################################################################################################
 
 
-# application defaults (these are not configurable and used only in this script so no need to export)
-DEFAULT_WPM_HOME=/opt/wpm
-
 # default settings
-export WPM_ADMIN_USERNAME=${WPM_ADMIN_USERNAME:-wpm-admin}
-export WPM_HOME=${WPM_HOME:-$DEFAULT_WPM_HOME}
-WPM_LAYOUT=${WPM_LAYOUT:-home}
+APPLICATION=workload-policy-manager
+WPM_BIN=/opt/wpm/bin
+WPM_SYMLINK=/usr/local/bin/wpm
+WPM_CONFIGURATION=/etc/${APPLICATION}
+WPM_LOGS=/var/log/${APPLICATION}
+INSTALL_LOG_FILE=$WPM_LOGS/install.log
 
-# the env directory is not configurable; it is defined as WPM_HOME/env.d and the
-# administrator may use a symlink if necessary to place it anywhere else
-export WPM_ENV=$WPM_HOME/env.d
-
-
-# 1. load application environment variables if already defined from env directory
-if [ -d $WPM_ENV ]; then
-  WPM_ENV_FILES=$(ls -1 $WPM_ENV/*)
-  for env_file in $WPM_ENV_FILES; do
-    . $env_file
-    env_file_exports=$(cat $env_file | grep -E '^[A-Z0-9_]+\s*=' | cut -d = -f 1)
-    echo_info $env_file_exports
-    if [ -n "$env_file_exports" ]; then eval export $env_file_exports; fi
-  done
-fi
 
 # Deployment phase
 # 2. load installer environment file, if present
@@ -90,25 +75,6 @@ if [ -f ~/wpm.env  ]; then
 else
   echo_failure "No environment file"
 fi
-
-echo_info "Creating directory layout"
-
-# LOCAL CONFIGURATION
-directory_layout() {
-export WPM_CONFIGURATION=${WPM_CONFIGURATION:-/etc/wpm/}
-export WPM_LOGS=${WPM_LOGS:-/var/log/wpm}
-export INSTALL_LOG_FILE=$WPM_LOGS/install.log
-}
-
-# 5. define application directory layout
-directory_layout
-
-# Output:
-# - variable "yum" contains path to yum or empty
-yum_detect() {
-  yum=`which yum 2>/dev/null`
-  if [ -n "$yum" ]; then return 0; else return 1; fi
-}
 
 echo_info "Clearing install logs and writing to it..."
 # before we start, clear the install log (directory must already exist; created above)
@@ -125,7 +91,7 @@ fi
 
 echo_info "Creating application directories and assigning permissions...."
 # 8. create application directories (chown will be repeated near end of this script, after setup)
-for directory in $WPM_HOME $WPM_CONFIGURATION $WPM_ENV $WPM_LOGS; do
+for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
   mkdir -p $directory
   if [ $? -ne 0 ]; then
@@ -142,24 +108,6 @@ if [ -f "$existing_wpm" ]; then
  exit 0
 fi
 
-echo_info "storing directory layout in env file..."
-# 11. store directory layout in env file
-echo "# $(date)" > $WPM_ENV/wpm-layout
-echo "WPM_HOME=$WPM_HOME" >> $WPM_ENV/wpm-layout
-echo "WPM_CONFIGURATION=$WPM_CONFIGURATION" >> $WPM_ENV/wpm-layout
-echo "WPM_LOGS=$WPM_LOGS" >> $WPM_ENV/wpm-layout
-
-
-
-# store the auto-exported environment variables in temporary env file
-# to make them available after the script uses sudo to switch users;
-# we delete that file later
-echo "# $(date)" > $WPM_ENV/wpm-setup
-for env_file_var_name in $env_file_exports
-do
-  eval env_file_var_value="\$$env_file_var_name"
-  echo "export $env_file_var_name='$env_file_var_value'" >> $WPM_ENV/wpm-setup
-done
 
 # exit wpm setup if WPM_NOSETUP is set
 if [ -n "$WPM_NOSETUP" ]; then
@@ -167,10 +115,10 @@ if [ -n "$WPM_NOSETUP" ]; then
   exit 0;
 fi
 
+cp -f $APPLICATION $WPM_BIN/wpm
+ln -sfT $WPM_BIN/wpm $WPM_SYMLINK
 echo_success "WPM installation complete"
-WPM_BIN_NAME=workload-policy-manager
-cp $WPM_BIN_NAME /usr/local/bin/wpm
+
 # 33. wpm setup
-WPM_SETUP_TASKS="create-envelope-key register-envelope-key-with-kbs"
 wpm setup
 

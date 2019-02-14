@@ -8,7 +8,6 @@ import (
 	"errors"
 	log "github.com/sirupsen/logrus"
 	csetup "intel/isecl/lib/common/setup"
-	"intel/isecl/wpm/config"
 	"intel/isecl/wpm/consts"
 	"os"
 )
@@ -35,11 +34,6 @@ func (ek CreateEnvelopeKey) Validate(c csetup.Context) error {
 func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 	log.Info("Creating envelope key")
 
-	// save configuration from config.yml
-	e := config.SaveConfiguration(c)
-	if e != nil {
-		return errors.New("error saving configuration. " + e.Error())
-	}
 	bitSize := 2048
 	keyPair, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {

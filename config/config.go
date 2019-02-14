@@ -81,8 +81,7 @@ func SaveConfiguration(c csetup.Context) error {
 // LogConfiguration is used to setup log configurations
 func LogConfiguration() error {
 	// creating the log file if not preset
-	LogFilePath := consts.LogDirPath + consts.LogFileName
-	logFile, err := os.OpenFile(LogFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
+	logFile, err := os.OpenFile(consts.LogFileName, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
 	if err != nil {
 		return errors.New("unable to write file. " + err.Error())
 	}
