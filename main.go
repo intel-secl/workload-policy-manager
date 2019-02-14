@@ -1,36 +1,24 @@
 package main
 
 import (
-	"crypto/md5"
 	"errors"
 	"flag"
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/wpm/config"
-	"intel/isecl/wpm/consts"
+	consts "intel/isecl/wpm/consts"
 	containerImageFlavor "intel/isecl/wpm/pkg/containerimageflavor"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
 	"intel/isecl/wpm/pkg/setup"
-	"intel/isecl/wpm/pkg/util"
+	util "intel/isecl/wpm/pkg/util"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
-
-var (
-	Version string = ""
-	Time    string = ""
-	Branch  string = ""
-)
-
-func printVersion() {
-	fmt.Printf("Version %s\nBuild %s at %s\n", Version, Branch, Time)
-}
 
 func main() {
 	args := os.Args[1:]
@@ -93,29 +81,29 @@ func main() {
 		}
 
 	case "create-container-image-flavor":
-		imageName := flag.String("i", "", "docker image name")
+		imageName := flag.String("n", "", "docker image name")
 		flag.StringVar(imageName, "img-name", "", "docker image name")
-		tagName := flag.String("t", "latest", "docker image tag")
-		flag.StringVar(tagName, "tag", "latest", "docker image tag")
-		dockerFilePath := flag.String("f", "", "Dockerfile path")
-		flag.StringVar(dockerFilePath, "docker-file", "", "Dockerfile path")
-		buildDir := flag.String("d", "", "build directory path containing source to build the docker image")
-		flag.StringVar(buildDir, "build-dir", "", "build directory path containing source to build the docker image")
-		keyID := flag.String("k", "", "key ID of key used for encrypting the image")
-		flag.StringVar(keyID, "key-id", "", "key ID of key used for encrypting the image")
-		encryptionRequired := flag.Bool("e", false, "specifies if image needs to be encrypted")
+		tagName := flag.String("t", "latest", "docker image tag name")
+		flag.StringVar(tagName, "tag-name", "latest", "docker image tag name")
+		dockerFilePath := flag.String("f", "", "docker image file path")
+		flag.StringVar(dockerFilePath, "docker-file", "", "docker image file path")
+		buildDir := flag.String("d", "", "build directory path containing source directory to build the docker image")
+		flag.StringVar(buildDir, "build-dir", "", "build directory path containing source directory to build the docker image")
+		keyID := flag.String("k", "", "existing key ID to get the image encryption key")
+		flag.StringVar(keyID, "key-id", "", "existing key ID to get the image encryption key ")
+		encryptionRequired := flag.Bool("enc", false, "specifies if image needs to be encrypted")
 		flag.BoolVar(encryptionRequired, "encryption-required", false, "specifies if image needs to be encrypted")
-		integrityEnforced := flag.Bool("s", false, "specifies if container image should be signed")
-		flag.BoolVar(integrityEnforced, "integrity-enforced", false, "specifies if container image needs to be signed")
-		notaryServerURL := flag.String("n", "", "notary server url to pull signed images")
-		flag.StringVar(notaryServerURL, "notary-server", "", "notary server url to pull signed images")
+		integrityEnforced := flag.Bool("enforce", false, "specifies if workload flavor should be enforced on image during launch")
+		flag.BoolVar(integrityEnforced, "integrity-enforced", false, "specifies if workload flavor should be enforced on image during launch")
+		notaryServerUrl := flag.String("s", "", "notary server url to pull signed images")
+		flag.StringVar(notaryServerUrl, "notary-server", "", "notary server url to pull signed images")
 		outputFlavorFilePath := flag.String("o", "", "output flavor file path")
 		flag.StringVar(outputFlavorFilePath, "out-file", "", "output flavor file path")
 		flag.Usage = func() { fmt.Println(containerImageFlavor.Usage()) }
 		flag.CommandLine.Parse(os.Args[2:])
 
 		containerImageFlavor, err := containerImageFlavor.CreateContainerImageFlavor(*imageName, *tagName, *dockerFilePath, *buildDir,
-			*keyID, *encryptionRequired, *integrityEnforced, *notaryServerURL, *outputFlavorFilePath)
+			*keyID, *encryptionRequired, *integrityEnforced, *notaryServerUrl, *outputFlavorFilePath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 			os.Exit(1)
@@ -125,8 +113,8 @@ func main() {
 		}
 
 	case "unwrap-key":
-		wrappedKeyFilePath := flag.String("i", "", "wrapped key file path")
-		flag.StringVar(wrappedKeyFilePath, "in", "", "wrapped key file path")
+		wrappedKeyFilePath := flag.String("f", "", "wrapped key file path")
+		flag.StringVar(wrappedKeyFilePath, "key-file-path", "", "wrapped key file path")
 		flag.CommandLine.Parse(os.Args[2:])
 
 		wrappedKey, err := ioutil.ReadFile(*wrappedKeyFilePath)
@@ -139,62 +127,27 @@ func main() {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
-		fmt.Println(unwrappedKey)
-
-	case "get-container-image-id":
-		if len(args[1:]) < 1 {
-			fmt.Println("Invalid number of parameters")
-			os.Exit(1)
+		_, err = deleteFiles(*wrappedKeyFilePath)
+		if err != nil {
+			fmt.Println("Cannot delete " + *wrappedKeyFilePath + err.Error())
 		}
-		NameSpaceDNS := uuid.Must(uuid.Parse("6ba7b810-9dad-11d1-80b4-00c04fd430c8"))
-		imageUUID := uuid.NewHash(md5.New(), NameSpaceDNS, []byte(args[1]), 4)
-		fmt.Println(imageUUID)
+		fmt.Println(unwrappedKey)
 
 	case "uninstall":
 		fmt.Println("Uninstalling WPM")
-		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
-			deleteFiles(consts.ConfigDirPath)
-		}
-		errorFiles, err := deleteFiles(consts.WpmSymLink, consts.OptDirPath, consts.ConfigDirPath, consts.LogDirPath)
+		errorFiles, err := deleteFiles("/usr/local/bin/wpm", consts.WPM_HOME, consts.ConfigDirPath, consts.LogDirPath)
 		if err != nil {
-			fmt.Printf("Error deleting files : %s", errorFiles)
+			fmt.Println(err)
+			fmt.Println(errorFiles)
 		}
 
 	case "help", "-help", "--help":
 		usage()
 
-	case "--version", "-v", "version", "-version":
-		printVersion()
-
-	case "create-software-flavor":
-		fmt.Println("Not supported")
-
 	default:
 		fmt.Printf("Unrecognized option : %s\n", arg)
 		usage()
 	}
-}
-
-func uninstall() {
-	var wpmHomeDirectory = "/opt/wpm/"
-	var wpmBinFile = "/usr/local/bin/wpm"
-
-	//remove wpm home directory
-	args := []string{"-rf", wpmHomeDirectory}
-	_, err := runCommand("rm", args)
-	if err != nil {
-		log.Fatal("Error trying to delete the WPM home directory")
-	}
-	log.Println("Deleting file: ", wpmHomeDirectory)
-
-	//delete the wpm binary from installed location
-	cmdArgs := []string{"-rf", wpmBinFile}
-	_, err = runCommand("rm", cmdArgs)
-	if err != nil {
-		log.Fatal("Error trying to delete the WPM binary")
-	}
-	log.Println("Deleting file: ", wpmBinFile)
-	log.Println("WPM uninstalled.")
 }
 
 func runCommand(cmd string, args []string) (string, error) {
@@ -203,21 +156,13 @@ func runCommand(cmd string, args []string) (string, error) {
 }
 
 func usage() {
-	fmt.Printf("Workload Policy Manager\n")
-	fmt.Printf("usage : %s <command> [<args>]\n\n", os.Args[0])
-	fmt.Printf("Following are the list of commands\n")
-	fmt.Printf("\tcreate-image-flavor|create-container-image-flavor|get-container-image-id|create-software-flavor|uninstall|--help|--version\n\n")
-	fmt.Printf("\tusage : %s setup [<tasklist>]\n", os.Args[0])
-	fmt.Printf("\t\t<tasklist>-space separated list of tasks\n")
-	fmt.Printf("\t\t\t-Supported tasks - CreateEnvelopeKey and RegisterEnvelopeKey\n")
-	fmt.Printf("\tExample :-\n")
-	fmt.Printf("\t\t%s setup\n", os.Args[0])
-	fmt.Printf("\t\t%s setup CreateEnvelopeKey\n", os.Args[0])
+	fmt.Printf("Usage: $0 uninstall|create-image-flavor|create-docker-image-flavor|create-software-flavor\n")
+	fmt.Printf("Usage: $0 setup [--force|--noexec] [task1 task2 ...]\n")
+	fmt.Printf("Available setup tasks: CreateEnvelopKey and RegisterEnvelopeKeyWithKBS\n")
 }
 
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
 	for _, path := range filePath {
-		log.Info("\n Deleting : ", path)
 		err := os.RemoveAll(path)
 		if err != nil {
 			errorFiles = append(errorFiles, path)

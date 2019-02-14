@@ -118,6 +118,9 @@ fi
 cp -f $APPLICATION $WPM_BIN/wpm
 ln -sfT $WPM_BIN/wpm $WPM_SYMLINK
 echo_success "WPM installation complete"
+WPM_BIN_NAME=workload-policy-manager
+cp $WPM_BIN_NAME /usr/local/bin/wpm
+chmod +x /usr/local/bin/wpm
 # 33. wpm setup
 wpm setup
 
