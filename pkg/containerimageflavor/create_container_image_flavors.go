@@ -18,8 +18,13 @@ import (
 	"strings"
 )
 
-//CreateContainerImageFlavor is used to create flavor of a docker image
-func CreateContainerImageFlavor(imageName, tagName, dockerFilePath, buildDir string,
+const (
+	DOCKER_CONTENT_TRUST_ENV_ENABLE        = "export DOCKER_CONTENT_TRUST=1"
+	DOCKER_CONTENT_TRUST_ENV_CUSTOM_NOTARY = DOCKER_CONTENT_TRUST_ENV_ENABLE + "; export DOCKER_CONTENT_TRUST_SERVER="
+)
+
+//CreateContainerImageFlavor is used to create flavor of a container image
+func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath string, buildDir string,
 	keyID string, encryptionRequired bool, integrityEnforced bool, notaryServerURL string, outputFlavorFilePath string) (string, error) {
 	var err error
 	var wrappedKey []byte
@@ -32,7 +37,7 @@ func CreateContainerImageFlavor(imageName, tagName, dockerFilePath, buildDir str
 
 	if len(strings.TrimSpace(dockerFilePath)) > 0 || len(strings.TrimSpace(buildDir)) > 0 {
 
-		//Error if docker file specified doesn't exist
+		//Error if Dockerfile specified doesn't exist
 		_, err = os.Stat(dockerFilePath)
 		if os.IsNotExist(err) {
 			return "", errors.New("Dockerfile does not exist")
@@ -56,26 +61,19 @@ func CreateContainerImageFlavor(imageName, tagName, dockerFilePath, buildDir str
 				keyID = strings.TrimLeft(strings.TrimRight(keyURLString, "/transfer"), config.Configuration.Kms.APIURL+"keys/")
 			}
 
-                        wrappedKeyFileName := "wrappedKey_" + keyID
-                        wrappedKeyFile, err := ioutil.TempFile("/tmp", wrappedKeyFileName)
-                        if err != nil {
-                                return "", errors.New("could not create wrapped key file")
-                        }
-                        if _, err =  wrappedKeyFile.Write(wrappedKey); err!=nil {
-                               return "", errors.New("could write the wrapped key in to the file")
-                        }
-
+			wrappedKeyFilePath := "/tmp/wrappedKey_" + keyID
+			os.Create(wrappedKeyFilePath)
+			err = ioutil.WriteFile(wrappedKeyFilePath, wrappedKey, 0600)
 
 			//Run docker build command to build encrypted image
 			cmd := exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tagName,
-				"--storage-opt", "RequiresConfidentiality=true", "--storage-opt", "KeyFilePath="+wrappedKeyFile.Name(),
+				"--storage-opt", "RequiresConfidentiality=true", "--storage-opt", "KeyFilePath="+wrappedKeyFilePath,
 				"--squash", "-f", dockerFilePath, buildDir)
 
 			_, err = cmd.CombinedOutput()
 			if err != nil {
-				return "", errors.New("could not build container image with encrytpion" + err.Error())
+				return "", errors.New("could not build container image" + err.Error())
 			}
-                        defer os.Remove(wrappedKeyFile.Name())
 
 		} else {
 			//Run docker build command to build plain image
@@ -86,23 +84,30 @@ func CreateContainerImageFlavor(imageName, tagName, dockerFilePath, buildDir str
 			}
 		}
 	} else {
-		//Pull plain image
-		_, err = exec.Command("docker", "pull", imageName+":"+tagName).CombinedOutput()
-		if err != nil {
-			return "", errors.New("could not pull docker image:" + err.Error())
+		if integrityEnforced {
+			if notaryServerURL == "" {
+				//add public notary server url
+				notaryServerURL = "https://notary.docker.io"
+			}
+			//Pull signed image
+			_, err = exec.Command(DOCKER_CONTENT_TRUST_ENV_CUSTOM_NOTARY+notaryServerURL, ";",
+				"docker", "pull", imageName+":"+tagName).CombinedOutput()
+			if err != nil {
+				return "", errors.New("could not pull signed docker image:" + err.Error())
+			}
+		} else {
+			//Pull plain image
+			_, err = exec.Command("docker", "pull", imageName+":"+tagName).CombinedOutput()
+			if err != nil {
+				return "", errors.New("could not pull docker image:" + err.Error())
+			}
 		}
-	}
-
-	if integrityEnforced && notaryServerURL == "" {
-		//add public notary server url
-		notaryServerURL = "https://notary.docker.io"
 	}
 
 	flavorLabel := imageName + ":" + tagName
 
-
 	//Create image flavor
-	containerImageFlavor, err := flavor.GetDockerImageFlavor(flavorLabel, encryptionRequired, keyURLString, integrityEnforced, notaryServerURL)
+	containerImageFlavor, err := flavor.GetContainerImageFlavor(flavorLabel, encryptionRequired, keyURLString, integrityEnforced, notaryServerURL)
 	if err != nil {
 		return "", errors.New("error creating image flavor:" + err.Error())
 	}
@@ -138,7 +143,7 @@ func Usage() string {
 	return "usage: wpm create-container-image-flavor [-n img-name] [-t tag-name] [-f dockerFile] [-d build-dir] [-k keyId]\n" +
 		"                            [-enc] [-enforce] [-s notaryServer] [-o out-file]\n" +
 		"  -n,       --img-name                     container image name\n" +
-		"  -t,       --tag-name                     (optional) container image tag name\n" +
+		"  -t,       --tag-name                     container image tag name\n" +
 		"  -f,       --docker-file                  (optional) container file path\n" +
 		"                                           to build the container image\n" +
 		"  -d,       --build-dir                    (optional) build directory to\n" +
