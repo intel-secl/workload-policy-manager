@@ -1,6 +1,7 @@
 #!/bin/bash
 
-if [ -z $GOPATH ]; then echo "Please set the go path"; fi
+# To fetch the Gurpartap/logrus-stack and facebookgo/stack and also to copy those dependencies to vendor directory, GOPATH need to be set
+if [ -z $GOPATH ]; then echo "Please set the go path"; exit 1; fi
 
 DAEMON_DIR=daemon-output
 

@@ -124,16 +124,21 @@ chmod +x /usr/local/bin/wpm
 # 33. wpm setup
 wpm setup
 
+#Bundle secure docker daemon with wpm only if WPM_WITH_SECURE_DOCKER_DAEMON is enabled in wpm.env
 if [ "$WPM_WITH_SECURE_DOCKER_DAEMON" == "y" ] || [ "$WPM_WITH_SECURE_DOCKER_DAEMON" == "Y" ]; then
+  which docker 2>/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Docker is not installed"
+    exit 1
+  fi
   echo "Installing installing secure docker daemon"
-  echo pwd
-#setting up secure docker daemon
   systemctl stop docker
-#set host ip address in secureoverlay.conf
-#cp -f /tmp/secure_docker_daemon_binary/secure_docker/secureoverlay.conf /etc/systemd/system/docker.service.d/
+  mkdir -p $WPM_HOME/secure-docker-daemon/backup
+  cp /usr/bin/docker* $WPM_HOME/secure-docker-daemon/backup/
   cp -f daemon-output/* /usr/bin/
   sed -i 's/^ExecStart=.*/ExecStart=\/usr\/bin\/dockerd\ \-H\ unix\:\/\/\ \-\-storage\-driver\ secureoverlay2\ \-\-experimental \-\-storage\-opt overlay2\.override\_kernel\_check\=1/' /lib/systemd/system/docker.service
   echo "Restarting docker"
   systemctl daemon-reload
   systemctl start docker
+  cp uninstall-secure-docker-daemon.sh $WPM_HOME/secure-docker-daemon/
 fi

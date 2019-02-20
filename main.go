@@ -131,12 +131,17 @@ func main() {
 
 	case "uninstall":
 		fmt.Println("Uninstalling WPM")
+	        _, err = exec.Command("ls","secure-docker-daemon").Output()
+                if err == nil {
+                   removeSecureDockerDaemon()
+                }
+
 		errorFiles, err := deleteFiles("/usr/local/bin/wpm", consts.WPM_HOME, consts.ConfigDirPath, consts.LogDirPath)
 		if err != nil {
 			fmt.Println(err)
 			fmt.Println(errorFiles)
 		}
-
+                
 	case "help", "-help", "--help":
 		usage()
 
@@ -146,13 +151,20 @@ func main() {
 	}
 }
 
+func removeSecureDockerDaemon(){
+         _, err := exec.Command("/opt/wpm/secure-docker-daemon/uninstall-secure-docker-daemon.sh").Output()
+         if err != nil {
+                 fmt.Println(err)
+         }
+}
+
 func runCommand(cmd string, args []string) (string, error) {
 	out, err := exec.Command(cmd, args...).Output()
 	return string(out), err
 }
 
 func usage() {
-	fmt.Printf("Usage: $0 uninstall|create-image-flavor|create-docker-image-flavor|create-software-flavor\n")
+	fmt.Printf("Usage: $0 uninstall|create-image-flavor|create-container-image-flavor|create-software-flavor\n")
 	fmt.Printf("Usage: $0 setup [--force|--noexec] [task1 task2 ...]\n")
 	fmt.Printf("Available setup tasks: CreateEnvelopKey and RegisterEnvelopeKeyWithKBS\n")
 }

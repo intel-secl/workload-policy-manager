@@ -17,6 +17,7 @@ installer: workload-policy-manager
 	rm -rf secure_docker_daemon
 	cp -r out/secure_docker_daemon/dcg_security-container-encryption/daemon-output out/wpm/
 	cp dist/linux/install.sh out/wpm/install.sh && chmod +x out/wpm/install.sh
+	cp dist/linux/uninstall-secure-docker-daemon.sh out/wpm/uninstall-secure-docker-daemon.sh && chmod +x out/wpm/uninstall-secure-docker-daemon.sh
 	cp out/workload-policy-manager out/wpm/workload-policy-manager
 	chmod +x out/wpm/workload-policy-manager
 	makeself out/wpm out/wpm-$(VERSION).bin "Workload Policy Manager $(VERSION)" ./install.sh
