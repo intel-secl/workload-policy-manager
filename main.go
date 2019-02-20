@@ -16,6 +16,15 @@ import (
 
 	log "github.com/sirupsen/logrus"
 )
+var (
+	Version string = ""
+	Time    string = ""
+	Branch  string = ""
+)
+
+func printVersion() {
+	fmt.Printf("Version %s\nBuild %s at %s\n", Version, Branch, Time)
+}
 
 func main() {
 	args := os.Args[1:]
@@ -86,6 +95,9 @@ func main() {
 		}
 	case "help", "-help", "--help":
 		usage()
+
+	case "--version", "-v", "version","-version":
+		printVersion()
 
 	default:
 		fmt.Printf("Unrecognized option : %s\n", arg)
