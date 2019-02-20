@@ -127,10 +127,6 @@ func main() {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
-		_, err = deleteFiles(*wrappedKeyFilePath)
-		if err != nil {
-			fmt.Println("Cannot delete " + *wrappedKeyFilePath + err.Error())
-		}
 		fmt.Println(unwrappedKey)
 
 	case "uninstall":
