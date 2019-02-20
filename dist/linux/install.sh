@@ -124,3 +124,16 @@ chmod +x /usr/local/bin/wpm
 # 33. wpm setup
 wpm setup
 
+if [ "$WPM_WITH_SECURE_DOCKER_DAEMON" == "y" ] || [ "$WPM_WITH_SECURE_DOCKER_DAEMON" == "Y" ]; then
+  echo "Installing installing secure docker daemon"
+  echo pwd
+#setting up secure docker daemon
+  systemctl stop docker
+#set host ip address in secureoverlay.conf
+#cp -f /tmp/secure_docker_daemon_binary/secure_docker/secureoverlay.conf /etc/systemd/system/docker.service.d/
+  cp -f daemon-output/* /usr/bin/
+  sed -i 's/^ExecStart=.*/ExecStart=\/usr\/bin\/dockerd\ \-H\ unix\:\/\/\ \-\-storage\-driver\ secureoverlay2\ \-\-experimental \-\-storage\-opt overlay2\.override\_kernel\_check\=1/' /lib/systemd/system/docker.service
+  echo "Restarting docker"
+  systemctl daemon-reload
+  systemctl start docker
+fi
