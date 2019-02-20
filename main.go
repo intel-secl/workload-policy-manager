@@ -6,11 +6,11 @@ import (
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/wpm/config"
-	consts "intel/isecl/wpm/consts"
+	"intel/isecl/wpm/consts"
 	containerImageFlavor "intel/isecl/wpm/pkg/containerimageflavor"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
 	"intel/isecl/wpm/pkg/setup"
-	util "intel/isecl/wpm/pkg/util"
+	"intel/isecl/wpm/pkg/util"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -83,14 +83,14 @@ func main() {
 	case "create-container-image-flavor":
 		imageName := flag.String("n", "", "docker image name")
 		flag.StringVar(imageName, "img-name", "", "docker image name")
-		tagName := flag.String("t", "latest", "docker image tag name")
-		flag.StringVar(tagName, "tag-name", "latest", "docker image tag name")
-		dockerFilePath := flag.String("f", "", "docker image file path")
-		flag.StringVar(dockerFilePath, "docker-file", "", "docker image file path")
-		buildDir := flag.String("d", "", "build directory path containing source directory to build the docker image")
-		flag.StringVar(buildDir, "build-dir", "", "build directory path containing source directory to build the docker image")
-		keyID := flag.String("k", "", "existing key ID to get the image encryption key")
-		flag.StringVar(keyID, "key-id", "", "existing key ID to get the image encryption key ")
+		tagName := flag.String("t", "latest", "docker image tag")
+		flag.StringVar(tagName, "tag-name", "latest", "docker image tag")
+		dockerFilePath := flag.String("f", "", "Dockerfile path")
+		flag.StringVar(dockerFilePath, "docker-file", "", "Dockerfile path")
+		buildDir := flag.String("d", "", "build directory path containing source to build the docker image")
+		flag.StringVar(buildDir, "build-dir", "", "build directory path containing source to build the docker image")
+		keyID := flag.String("k", "", "key ID of key used for encrypting the image")
+		flag.StringVar(keyID, "key-id", "", "key ID of key used for encrypting the image")
 		encryptionRequired := flag.Bool("enc", false, "specifies if image needs to be encrypted")
 		flag.BoolVar(encryptionRequired, "encryption-required", false, "specifies if image needs to be encrypted")
 		integrityEnforced := flag.Bool("enforce", false, "specifies if workload flavor should be enforced on image during launch")
