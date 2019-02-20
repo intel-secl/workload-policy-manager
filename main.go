@@ -136,7 +136,7 @@ func usage() {
 	fmt.Printf("Workload Policy Manager\n")
 	fmt.Printf("usage : %s <command> [<args>]\n\n", os.Args[0])
 	fmt.Printf("Following are the list of commands\n")
-	fmt.Printf("\tcreate-image-flavor|create-software-flavor|uninstall|--help\n\n")
+	fmt.Printf("\tcreate-image-flavor|create-software-flavor|uninstall|--help|--version\n\n")
 	fmt.Printf("\tusage : %s setup [<tasklist>]\n", os.Args[0])
 	fmt.Printf("\t\t<tasklist>-space separated list of tasks\n")
 	fmt.Printf("\t\t\t-Supported tasks - CreateEnvelopeKey and RegisterEnvelopeKey\n")
