@@ -16,6 +16,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 )
+
 var (
 	Version string = ""
 	Time    string = ""
@@ -96,8 +97,11 @@ func main() {
 	case "help", "-help", "--help":
 		usage()
 
-	case "--version", "-v", "version","-version":
+	case "--version", "-v", "version", "-version":
 		printVersion()
+
+	case "create-software-flavor":
+		fmt.Println("Not supported")
 
 	default:
 		fmt.Printf("Unrecognized option : %s\n", arg)
