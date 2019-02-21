@@ -8,10 +8,9 @@ package containerimageflavor
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	flavor "intel/isecl/lib/flavor"
-	config "intel/isecl/wpm/config"
-	util "intel/isecl/wpm/pkg/util"
+	"intel/isecl/lib/flavor"
+	"intel/isecl/wpm/config"
+	"intel/isecl/wpm/pkg/util"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -19,8 +18,8 @@ import (
 	"strings"
 )
 
-//CreateDockerImageFlavor is used to create flavor of a docker image
-func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath string, buildDir string,
+//CreateContainerImageFlavor is used to create flavor of a docker image
+func CreateContainerImageFlavor(imageName, tagName, dockerFilePath, buildDir string,
 	keyID string, encryptionRequired bool, integrityEnforced bool, notaryServerURL string, outputFlavorFilePath string) (string, error) {
 	var err error
 	var wrappedKey []byte
@@ -36,7 +35,7 @@ func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath
 		//Error if docker file specified doesn't exist
 		_, err = os.Stat(dockerFilePath)
 		if os.IsNotExist(err) {
-			return "", errors.New("docker file does not exist")
+			return "", errors.New("Dockerfile does not exist")
 		}
 
 		//Error if build directory specified doesn't exist
@@ -57,19 +56,26 @@ func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath
 				keyID = strings.TrimLeft(strings.TrimRight(keyURLString, "/transfer"), config.Configuration.Kms.APIURL+"keys/")
 			}
 
-			wrappedKeyFilePath := "/tmp/wrappedKey_" + keyID
-			os.Create(wrappedKeyFilePath)
-			err = ioutil.WriteFile(wrappedKeyFilePath, wrappedKey, 0600)
+                        wrappedKeyFileName := "wrappedKey_" + keyID
+                        wrappedKeyFile, err := ioutil.TempFile("/tmp", wrappedKeyFileName)
+                        if err != nil {
+                                return "", errors.New("could not create wrapped key file")
+                        }
+                        if _, err =  wrappedKeyFile.Write(wrappedKey); err!=nil {
+                               return "", errors.New("could write the wrapped key in to the file")
+                        }
+
 
 			//Run docker build command to build encrypted image
 			cmd := exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tagName,
-				"--storage-opt", "RequiresConfidentiality=true", "--storage-opt", "KeyFilePath="+wrappedKeyFilePath,
+				"--storage-opt", "RequiresConfidentiality=true", "--storage-opt", "KeyFilePath="+wrappedKeyFile.Name(),
 				"--squash", "-f", dockerFilePath, buildDir)
 
 			_, err = cmd.CombinedOutput()
 			if err != nil {
-				return "", errors.New("could not build container image" + err.Error())
+				return "", errors.New("could not build container image with encrytpion" + err.Error())
 			}
+                        defer os.Remove(wrappedKeyFile.Name())
 
 		} else {
 			//Run docker build command to build plain image
@@ -94,8 +100,6 @@ func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath
 
 	flavorLabel := imageName + ":" + tagName
 
-	fmt.Printf("%s %s %s %s %s %t %t %s %s %s\n", imageName, tagName, dockerFilePath, buildDir, keyID,
-		encryptionRequired, integrityEnforced, notaryServerURL, outputFlavorFilePath, flavorLabel)
 
 	//Create image flavor
 	containerImageFlavor, err := flavor.GetDockerImageFlavor(flavorLabel, encryptionRequired, keyURLString, integrityEnforced, notaryServerURL)
