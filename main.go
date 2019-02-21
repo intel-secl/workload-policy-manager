@@ -20,6 +20,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+
+const WPM_HOME="/opt/wpm"
+
 func main() {
 	args := os.Args[1:]
 	if len(args) <= 0 {
@@ -131,7 +134,7 @@ func main() {
 
 	case "uninstall":
 		fmt.Println("Uninstalling WPM")
-	        _, err = exec.Command("ls","secure-docker-daemon").Output()
+	        _, err = exec.Command("ls", WPM_HOME+"/secure-docker-daemon").Output()
                 if err == nil {
                    removeSecureDockerDaemon()
                 }
@@ -152,7 +155,7 @@ func main() {
 }
 
 func removeSecureDockerDaemon(){
-         _, err := exec.Command("/opt/wpm/secure-docker-daemon/uninstall-secure-docker-daemon.sh").Output()
+         _, err := exec.Command(WPM_HOME+"/secure-docker-daemon/uninstall-secure-docker-daemon.sh").Output()
          if err != nil {
                  fmt.Println(err)
          }

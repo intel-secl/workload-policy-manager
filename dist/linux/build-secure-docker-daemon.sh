@@ -24,6 +24,11 @@ sed -i 's/sirupsen/Sirupsen/' vendor/github.com/Gurpartap/logrus-stack/logrus-st
 
 make
 
+if [ $? -ne 0 ]; then
+  echo "could not build secure docker daemon"
+  exit 1
+fi
+  
 #Copy daemon binaries single output directory daemon-output
 mkdir $DAEMON_DIR 2>/dev/null
 CURR_DIR=`pwd`
