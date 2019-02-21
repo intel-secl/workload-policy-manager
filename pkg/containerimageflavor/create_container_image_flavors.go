@@ -138,7 +138,7 @@ func Usage() string {
 	return "usage: wpm create-container-image-flavor [-n img-name] [-t tag-name] [-f dockerFile] [-d build-dir] [-k keyId]\n" +
 		"                            [-enc] [-enforce] [-s notaryServer] [-o out-file]\n" +
 		"  -n,       --img-name                     container image name\n" +
-		"  -t,       --tag-name                     container image tag name\n" +
+		"  -t,       --tag-name                     (optional) container image tag name\n" +
 		"  -f,       --docker-file                  (optional) container file path\n" +
 		"                                           to build the container image\n" +
 		"  -d,       --build-dir                    (optional) build directory to\n" +
