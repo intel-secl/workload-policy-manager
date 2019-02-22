@@ -126,7 +126,7 @@ chmod +x /usr/local/bin/wpm
 wpm setup
 
 #Install secure docker daemon with wpm only if WPM_WITH_SECURE_DOCKER_DAEMON is enabled in wpm.env
-if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" == "Y" ]; then
+if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" == "Y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" == "yes" ]; then
   which docker 2>/dev/null
   if [ $? -ne 0 ]; then
     echo "Docker is not installed"
@@ -143,3 +143,5 @@ if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY"
   systemctl start docker
   cp uninstall-secure-docker-daemon.sh $WPM_HOME/secure-docker-daemon/
 fi
+
+echo "Installation completed."
