@@ -132,6 +132,11 @@ if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY"
     echo "Docker is not installed"
     exit 1
   fi
+  which cryptsetup 2>/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Installing cryptsetup"
+    yum install -y cryptsetup
+  fi
   echo "Installing secure docker daemon"
   systemctl stop docker
   mkdir -p $WPM_HOME/secure-docker-daemon/backup
