@@ -21,6 +21,7 @@ import (
 const (
 	DOCKER_CONTENT_TRUST_ENV_ENABLE        = "export DOCKER_CONTENT_TRUST=1"
 	DOCKER_CONTENT_TRUST_ENV_CUSTOM_NOTARY = DOCKER_CONTENT_TRUST_ENV_ENABLE + "; export DOCKER_CONTENT_TRUST_SERVER="
+	DEFAULT_NOTARY_SERVER_URL              = "https://notary.docker.io"
 )
 
 //CreateContainerImageFlavor is used to create flavor of a container image
@@ -87,7 +88,7 @@ func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath
 		if integrityEnforced {
 			if notaryServerURL == "" {
 				//add public notary server url
-				notaryServerURL = "https://notary.docker.io"
+				notaryServerURL = DEFAULT_NOTARY_SERVER_URL
 			}
 			//Pull signed image
 			_, err = exec.Command(DOCKER_CONTENT_TRUST_ENV_CUSTOM_NOTARY+notaryServerURL, ";",
