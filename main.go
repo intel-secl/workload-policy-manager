@@ -134,12 +134,12 @@ func main() {
 
 	case "uninstall":
 		fmt.Println("Uninstalling WPM")
-	        _, err = exec.Command("ls", WPM_HOME+"/secure-docker-daemon").Output()
+	        _, err = exec.Command("ls", consts.OptDirPath+"/secure-docker-daemon").Output()
                 if err == nil {
                    removeSecureDockerDaemon()
                 }
 
-		errorFiles, err := deleteFiles("/usr/local/bin/wpm", consts.WPM_HOME, consts.ConfigDirPath, consts.LogDirPath)
+		errorFiles, err := deleteFiles("/usr/local/bin/wpm", consts.OptDirPath, consts.ConfigDirPath, consts.LogDirPath)
 		if err != nil {
 			fmt.Println(err)
 			fmt.Println(errorFiles)

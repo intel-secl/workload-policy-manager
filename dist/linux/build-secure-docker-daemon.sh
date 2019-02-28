@@ -16,15 +16,11 @@ git pull
 #Build secure docker daemon
 #Dependencies Gurpartap and facbookgo repos need to be manually copied to vendor directory.
 cd dcg_security-container-encryption
-go get github.com/Gurpartap/logrus-stack
-go get github.com/facebookgo/stack
+go get -u github.com/Gurpartap/logrus-stack
+go get -u github.com/facebookgo/stack
 cp -r $GOPATH/src/github.com/Gurpartap vendor/github.com/
 cp -r $GOPATH/src/github.com/facebookgo vendor/github.com/
-mkdir -p vendor/intel/isecl/lib/
-cp -r $GOPATH/src/intel/isecl/lib/common vendor/intel/isecl/lib/
-cp -r $GOPATH/src/intel/isecl/lib/tpm vendor/intel/isecl/lib/
 sed -i 's/sirupsen/Sirupsen/' vendor/github.com/Gurpartap/logrus-stack/logrus-stack-hook.go
-sed -i 's/sirupsen/Sirupsen/' vendor/intel/isecl/lib/common/pkg/util/tpm-unwrap.go
 
 make
 
