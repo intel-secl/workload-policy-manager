@@ -151,7 +151,7 @@ func Usage() string {
 		"                                           build the container image\n" +
 		"  -k,       --key-id                       (optional) existing key ID\n" +
 		"                                           if not specified, a new key is generated\n" +
-		"  -enc,     --encryption-required          (optional) boolean parameter specifies if\n" +
+		"  -e,     --encryption-required            (optional) boolean parameter specifies if\n" +
 		"                                           container image needs to be encrypted\n" +
 		"  -enforce, --integrity-enforced           (optional) boolean parameter specifies if\n" +
 		"                                           workload flavor should be enforced on image\n" +
