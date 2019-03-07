@@ -58,6 +58,7 @@ echo_info() {
 
 # default settings
 APPLICATION=workload-policy-manager
+WPM_HOME=/opt/wpm
 WPM_BIN=/opt/wpm/bin
 WPM_SYMLINK=/usr/local/bin/wpm
 WPM_CONFIGURATION=/etc/${APPLICATION}
