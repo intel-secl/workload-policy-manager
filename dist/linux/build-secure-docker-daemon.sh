@@ -22,7 +22,7 @@ cp -r $GOPATH/src/github.com/Gurpartap vendor/github.com/
 cp -r $GOPATH/src/github.com/facebookgo vendor/github.com/
 sed -i 's/sirupsen/Sirupsen/' vendor/github.com/Gurpartap/logrus-stack/logrus-stack-hook.go
 
-make
+make > /dev/null
 
 if [ $? -ne 0 ]; then
   echo "could not build secure docker daemon"
