@@ -1,19 +1,24 @@
 package main
 
 import (
+	"crypto/md5"
 	"errors"
 	"flag"
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/wpm/config"
 	"intel/isecl/wpm/consts"
+	containerImageFlavor "intel/isecl/wpm/pkg/containerimageflavor"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
 	"intel/isecl/wpm/pkg/setup"
+	"intel/isecl/wpm/pkg/util"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -87,6 +92,64 @@ func main() {
 			fmt.Println(imageFlavor)
 		}
 
+	case "create-container-image-flavor":
+		imageName := flag.String("i", "", "docker image name")
+		flag.StringVar(imageName, "img-name", "", "docker image name")
+		tagName := flag.String("t", "latest", "docker image tag")
+		flag.StringVar(tagName, "tag", "latest", "docker image tag")
+		dockerFilePath := flag.String("f", "", "Dockerfile path")
+		flag.StringVar(dockerFilePath, "docker-file", "", "Dockerfile path")
+		buildDir := flag.String("d", "", "build directory path containing source to build the docker image")
+		flag.StringVar(buildDir, "build-dir", "", "build directory path containing source to build the docker image")
+		keyID := flag.String("k", "", "key ID of key used for encrypting the image")
+		flag.StringVar(keyID, "key-id", "", "key ID of key used for encrypting the image")
+		encryptionRequired := flag.Bool("e", false, "specifies if image needs to be encrypted")
+		flag.BoolVar(encryptionRequired, "encryption-required", false, "specifies if image needs to be encrypted")
+		integrityEnforced := flag.Bool("s", false, "specifies if container image should be signed")
+		flag.BoolVar(integrityEnforced, "integrity-enforced", false, "specifies if container image needs to be signed")
+		notaryServerURL := flag.String("n", "", "notary server url to pull signed images")
+		flag.StringVar(notaryServerURL, "notary-server", "", "notary server url to pull signed images")
+		outputFlavorFilePath := flag.String("o", "", "output flavor file path")
+		flag.StringVar(outputFlavorFilePath, "out-file", "", "output flavor file path")
+		flag.Usage = func() { fmt.Println(containerImageFlavor.Usage()) }
+		flag.CommandLine.Parse(os.Args[2:])
+
+		containerImageFlavor, err := containerImageFlavor.CreateContainerImageFlavor(*imageName, *tagName, *dockerFilePath, *buildDir,
+			*keyID, *encryptionRequired, *integrityEnforced, *notaryServerURL, *outputFlavorFilePath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+			os.Exit(1)
+		}
+		if len(containerImageFlavor) > 0 {
+			fmt.Println(containerImageFlavor)
+		}
+
+	case "unwrap-key":
+		wrappedKeyFilePath := flag.String("i", "", "wrapped key file path")
+		flag.StringVar(wrappedKeyFilePath, "in", "", "wrapped key file path")
+		flag.CommandLine.Parse(os.Args[2:])
+
+		wrappedKey, err := ioutil.ReadFile(*wrappedKeyFilePath)
+		if err != nil {
+			fmt.Println("Cannot read from file: " + err.Error())
+			os.Exit(1)
+		}
+		unwrappedKey, err := util.UnwrapKey(wrappedKey, consts.EnvelopePrivatekeyLocation)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		fmt.Println(unwrappedKey)
+
+	case "get-container-image-id":
+		if len(args[1:]) < 1 {
+			fmt.Println("Invalid number of parameters")
+			os.Exit(1)
+		}
+		NameSpaceDNS := uuid.Must(uuid.Parse("6ba7b810-9dad-11d1-80b4-00c04fd430c8"))
+		imageUUID := uuid.NewHash(md5.New(), NameSpaceDNS, []byte(args[1]), 4)
+		fmt.Println(imageUUID)
+
 	case "uninstall":
 		fmt.Println("Uninstalling WPM")
 		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
@@ -94,7 +157,7 @@ func main() {
 		}
 		errorFiles, err := deleteFiles(consts.WpmSymLink, consts.OptDirPath, consts.ConfigDirPath, consts.LogDirPath)
 		if err != nil {
-			fmt.Println(errorFiles)
+			fmt.Printf("Error deleting files : %s", errorFiles)
 		}
 
 	case "help", "-help", "--help":
@@ -143,7 +206,7 @@ func usage() {
 	fmt.Printf("Workload Policy Manager\n")
 	fmt.Printf("usage : %s <command> [<args>]\n\n", os.Args[0])
 	fmt.Printf("Following are the list of commands\n")
-	fmt.Printf("\tcreate-image-flavor|create-software-flavor|uninstall|--help|--version\n\n")
+	fmt.Printf("\tcreate-image-flavor|create-container-image-flavor|get-container-image-id|create-software-flavor|uninstall|--help|--version\n\n")
 	fmt.Printf("\tusage : %s setup [<tasklist>]\n", os.Args[0])
 	fmt.Printf("\t\t<tasklist>-space separated list of tasks\n")
 	fmt.Printf("\t\t\t-Supported tasks - CreateEnvelopeKey and RegisterEnvelopeKey\n")

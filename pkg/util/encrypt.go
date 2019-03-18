@@ -1,6 +1,7 @@
-package imageflavor
+package util
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -14,10 +15,9 @@ import (
 	"io"
 	"io/ioutil"
 	"unsafe"
-	"bytes"
 )
 
-func encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation string, wrappedKey []byte) error {
+func Encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation string, wrappedKey []byte) error {
 
 	var encryptionHeader crypt.EncryptionHeader
 
@@ -27,7 +27,7 @@ func encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation 
 		return errors.New("error reading the image file")
 	}
 
-	key, err := unwrapKey(wrappedKey, privateKeyLocation)
+	key, err := UnwrapKey(wrappedKey, privateKeyLocation)
 	if err != nil {
 		return errors.New("error while unwrapping the key")
 	}
@@ -68,7 +68,7 @@ func encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation 
 	return nil
 }
 
-func unwrapKey(wrappedKey []byte, privateKeyLocation string) ([]byte, error) {
+func UnwrapKey(wrappedKey []byte, privateKeyLocation string) ([]byte, error) {
 
 	var unwrappedKey []byte
 	privateKey, err := ioutil.ReadFile(privateKeyLocation)

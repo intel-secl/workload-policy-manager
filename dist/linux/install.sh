@@ -118,7 +118,6 @@ fi
 cp -f $APPLICATION $WPM_BIN/wpm
 ln -sfT $WPM_BIN/wpm $WPM_SYMLINK
 echo_success "WPM installation complete"
-
 # 33. wpm setup
 wpm setup
 

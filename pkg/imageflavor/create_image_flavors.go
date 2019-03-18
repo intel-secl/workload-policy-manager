@@ -10,13 +10,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	flavor "intel/isecl/lib/flavor"
-	kms "intel/isecl/lib/kms-client"
-	config "intel/isecl/wpm/config"
+	"intel/isecl/lib/flavor"
 	"intel/isecl/wpm/consts"
-	"intel/isecl/wpm/pkg/kmsclient"
+	"intel/isecl/wpm/pkg/util"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -27,8 +24,7 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 	keyID string, integrityRequired bool) (string, error) {
 
 	var err error
-	var keyValue []byte
-	var keyInfo kms.KeyInfo
+	var wrappedKey []byte
 	var keyURLString string
 	encRequired := true
 	imageFilePath := inputImageFilePath
@@ -56,40 +52,9 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 		if len(strings.TrimSpace(keyID)) > 0 && !isValidUUID(keyID) {
 			return "", errors.New("incorrectly formatted key ID")
 		}
+		wrappedKey, keyURLString, err = util.FetchKey(keyID)
 
-		//Initialize the KMS client
-		kc, err := kmsclient.InitializeClient()
-		if err != nil {
-			return "", errors.New("error initializing KMS client")
-		}
-
-		//If key ID is not specified, create a new key
-		if len(strings.TrimSpace(keyID)) <= 0 {
-			keyInfo.Algorithm = consts.KmsEncryptAlgo
-			keyInfo.KeyLength = consts.KmsKeyLength
-			keyInfo.CipherMode = consts.KmsCipherMode
-
-			key, err := kc.Keys().Create(keyInfo)
-			if err != nil {
-				return "", errors.New("error creating the image encryption key: " + err.Error())
-			}
-			keyID = key.KeyID
-		}
-
-		//Build the key URL, to be inserted later on when the image flavor is created
-		keyURL, err := url.Parse(config.Configuration.Kms.APIURL + "keys/" + keyID + "/transfer")
-		if err != nil {
-			return "", errors.New("error building KMS key URL: " + err.Error())
-		}
-		keyURLString = keyURL.String()
-
-		//Retrieve key using key ID
-		keyValue, err = kc.Key(keyID).Retrieve()
-		if err != nil {
-			return "", errors.New("error retrieving the image encryption key: " + err.Error())
-		}
-
-		err = encrypt(inputImageFilePath, consts.EnvelopePrivatekeyLocation, outputEncImageFilePath, keyValue)
+		err = util.Encrypt(inputImageFilePath, consts.EnvelopePrivatekeyLocation, outputEncImageFilePath, wrappedKey)
 		if err != nil {
 			return "", errors.New("error encrypting image: " + err.Error())
 		}
