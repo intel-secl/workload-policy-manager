@@ -13,9 +13,9 @@ import (
 	"intel/isecl/lib/flavor"
 	"intel/isecl/wpm/consts"
 	"intel/isecl/wpm/pkg/util"
+	"intel/isecl/lib/common/validation"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strings"
 )
 
@@ -34,6 +34,11 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 		return "", errors.New(Usage())
 	}
 
+	inputArr := []string{flavorLabel, outputFlavorFilePath, inputImageFilePath, outputEncImageFilePath}
+	if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
+		return "", validationErr
+	}
+
 	//Determine if encryption is required
 	outputEncImageFilePath = strings.TrimSpace(outputEncImageFilePath)
 	if len(outputEncImageFilePath) <= 0 {
@@ -48,9 +53,11 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 
 	//Encrypt the image with the key
 	if encRequired {
-		//If the key ID is specified, make sure it's a valid UUID
-		if len(strings.TrimSpace(keyID)) > 0 && !isValidUUID(keyID) {
-			return "", errors.New("incorrectly formatted key ID")
+		//If the key ID is specified, make sure it's a valid UUID		
+		if len(strings.TrimSpace(keyID)) > 0 {
+			if validatekeyIDErr := validation.ValidateUUID(keyID); validatekeyIDErr != nil {
+				return "", errors.New("incorrectly formatted key ID")
+			}
 		}
 		wrappedKey, keyURLString, err = util.FetchKey(keyID)
 
@@ -93,13 +100,6 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 		return "", errors.New("error writing image flavor to output file")
 	}
 	return "", err
-}
-
-//Regex match to determine if string is valid UUID
-//TODO: move to common lib validation package
-func isValidUUID(uuid string) bool {
-	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
-	return r.MatchString(uuid)
 }
 
 //Usage command line usage string
