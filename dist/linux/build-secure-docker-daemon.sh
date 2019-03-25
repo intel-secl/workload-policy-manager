@@ -10,7 +10,7 @@ git clone ssh://git@gitlab.devtools.intel.com:29418/sst/isecl/secure_docker_daem
 
 cd secure_docker_daemon
 git fetch
-git checkout v1.0/feature/ISecL#3346
+git checkout v1.0/develop
 git pull
 
 #Build secure docker daemon
@@ -18,9 +18,19 @@ git pull
 cd dcg_security-container-encryption
 go get -u github.com/Gurpartap/logrus-stack
 go get -u github.com/facebookgo/stack
-cp -r $GOPATH/src/github.com/Gurpartap vendor/github.com/
-cp -r $GOPATH/src/github.com/facebookgo vendor/github.com/
-sed -i 's/sirupsen/Sirupsen/' vendor/github.com/Gurpartap/logrus-stack/logrus-stack-hook.go
+mkdir -p vendor/github.com/Gurpartap/logrus-stack  2>/dev/null
+mkdir -p  vendor/github.com/facebookgo/stack 2>/dev/null
+logrus=`find $GOPATH/pkg/mod/github.com/\!gurpartap -type d | grep "stack" | head -n 1`
+stack=`find $GOPATH/pkg/mod/github.com/facebookgo -type d | grep "stack" | head -n 1`
+
+if [ -d $logrus ]; then
+  cp -r $logrus/* vendor/github.com/Gurpartap/logrus-stack/
+  sed -i 's/sirupsen/Sirupsen/' vendor/github.com/Gurpartap/logrus-stack/logrus-stack-hook.go
+fi
+
+if [ -d $stack ]; then
+  cp -r $stack/*  vendor/github.com/facebookgo/stack/
+fi
 
 make > /dev/null
 

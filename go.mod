@@ -3,6 +3,7 @@ module intel/isecl/wpm
 require (
 	github.com/Gurpartap/logrus-stack v0.0.0-20170710170904-89c00d8a28f4 // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
+	github.com/google/uuid v1.1.1
 	github.com/sirupsen/logrus v1.3.0
 	github.com/stretchr/testify v1.3.0
 	gopkg.in/yaml.v2 v2.2.2
