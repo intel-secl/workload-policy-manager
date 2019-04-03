@@ -142,6 +142,7 @@ if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY"
   systemctl stop docker
   mkdir -p $WPM_HOME/secure-docker-daemon/backup
   cp /usr/bin/docker* $WPM_HOME/secure-docker-daemon/backup/
+  chown -R root:root daemon-output
   cp -f daemon-output/* /usr/bin/
   sed -i 's/^ExecStart=.*/ExecStart=\/usr\/bin\/dockerd\ \-H\ unix\:\/\/\ \-\-storage\-driver\ secureoverlay2\ \-\-experimental \-\-storage\-opt overlay2\.override\_kernel\_check\=1/' /lib/systemd/system/docker.service
   echo "Restarting docker"

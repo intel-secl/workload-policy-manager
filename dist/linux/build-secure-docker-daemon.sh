@@ -25,10 +25,12 @@ stack=`find $GOPATH/pkg/mod/github.com/facebookgo -type d | grep "stack" | head 
 
 if [ -d $logrus ]; then
   cp -r $logrus/* vendor/github.com/Gurpartap/logrus-stack/
+  chmod -R +w vendor/github.com/Gurpartap/logrus-stack/
   sed -i 's/sirupsen/Sirupsen/' vendor/github.com/Gurpartap/logrus-stack/logrus-stack-hook.go
 fi
 
 if [ -d $stack ]; then
+  chmod -R +w vendor/github.com/facebookgo/stack/
   cp -r $stack/*  vendor/github.com/facebookgo/stack/
 fi
 
