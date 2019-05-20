@@ -25,8 +25,8 @@ const (
 )
 
 //CreateContainerImageFlavor is used to create flavor of a container image
-func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath string, buildDir string,
-	keyID string, encryptionRequired bool, integrityEnforced bool, notaryServerURL string, outputFlavorFilePath string) (string, error) {
+func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
+	keyID string, encryptionRequired, integrityEnforced bool, notaryServerURL, outputFlavorFilePath string) (string, error) {
 	var err error
 	var wrappedKey []byte
 	var keyURLString string
@@ -35,7 +35,7 @@ func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath
 	if len(strings.TrimSpace(imageName)) <= 0 {
 		return "", errors.New(Usage())
 	}
-
+	flavorLabel := imageName + ":" + tag
 	if len(strings.TrimSpace(dockerFilePath)) > 0 || len(strings.TrimSpace(buildDir)) > 0 {
 
 		//Error if Dockerfile specified doesn't exist
@@ -67,8 +67,8 @@ func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath
 			err = ioutil.WriteFile(wrappedKeyFilePath, wrappedKey, 0600)
 
 			//Run docker build command to build encrypted image
-			cmd := exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tagName,
-				"--storage-opt", "RequiresConfidentiality=true", "--storage-opt", "KeyFilePath="+wrappedKeyFilePath,
+			cmd := exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tag,
+				"--storage-opt", "RequiresConfidentiality=true", "--storage-opt", "KeyFilePath="+wrappedKeyFile.Name(),
 				"--squash", "-f", dockerFilePath, buildDir)
 
 			_, err = cmd.CombinedOutput()
@@ -78,34 +78,23 @@ func CreateContainerImageFlavor(imageName string, tagName string, dockerFilePath
 
 		} else {
 			//Run docker build command to build plain image
-			_, err = exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tagName,
+			_, err = exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tag,
 				"-f", dockerFilePath, buildDir).CombinedOutput()
 			if err != nil {
 				return "", errors.New("could not build container image")
 			}
 		}
 	} else {
-		if integrityEnforced {
-			if notaryServerURL == "" {
-				//add public notary server url
-				notaryServerURL = DEFAULT_NOTARY_SERVER_URL
-			}
-			//Pull signed image
-			_, err = exec.Command(DOCKER_CONTENT_TRUST_ENV_CUSTOM_NOTARY+notaryServerURL, ";",
-				"docker", "pull", imageName+":"+tagName).CombinedOutput()
-			if err != nil {
-				return "", errors.New("could not pull signed docker image:" + err.Error())
-			}
-		} else {
-			//Pull plain image
-			_, err = exec.Command("docker", "pull", imageName+":"+tagName).CombinedOutput()
-			if err != nil {
-				return "", errors.New("could not pull docker image:" + err.Error())
-			}
+		_, err = exec.Command("docker", "inspect", "--type=image", imageName+":"+tag).CombinedOutput()
+                if err != nil {
+        	               return "", errors.New("Could not find image with name:" + imageName + " and tag:" + tag +"\nImage should be present locally")
 		}
 	}
 
-	flavorLabel := imageName + ":" + tagName
+	if integrityEnforced && notaryServerURL == "" {
+		//add public notary server url
+		notaryServerURL = DEFAULT_NOTARY_SERVER_URL
+	}
 
 	//Create image flavor
 	containerImageFlavor, err := flavor.GetContainerImageFlavor(flavorLabel, encryptionRequired, keyURLString, integrityEnforced, notaryServerURL)
@@ -141,8 +130,8 @@ func isValidUUID(uuid string) bool {
 
 //Usage command line usage string
 func Usage() string {
-	return "usage: wpm create-container-image-flavor [-n img-name] [-t tag] [-f dockerFile] [-d build-dir] [-k keyId]\n" +
-		"                            [-enc] [-enforce] [-s notaryServer] [-o out-file]\n" +
+	return "usage: wpm create-container-image-flavor [-i img-name] [-t tag] [-f dockerFile] [-d build-dir] [-k keyId]\n" +
+		"                            [-e] [-s] [-n notaryServer] [-o out-file]\n" +
 		"  -i,       --img-name                     container image name\n" +
 		"  -t,       --tag                          (optional)container image tag name\n" +
 		"  -f,       --docker-file                  (optional) container file path\n" +
