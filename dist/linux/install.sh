@@ -144,6 +144,7 @@ if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY"
   cp /usr/bin/docker* $WPM_HOME/secure-docker-daemon/backup/
   chown -R root:root docker-daemon
   cp -f docker-daemon/* /usr/bin/
+  mkdir -p /etc/docker
   cp daemon.json /etc/docker/
   echo "Restarting docker"
   systemctl daemon-reload
