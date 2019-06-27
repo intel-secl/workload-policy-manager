@@ -55,7 +55,7 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 		if encryptionRequired {
 			wrappedKey, keyURLString, err = util.FetchKey(keyID)
 			if keyID == "" {
-				keyID = strings.TrimLeft(strings.TrimRight(keyURLString, "/transfer"), config.Configuration.Kms.APIURL+"keys/")
+				keyID = strings.Split(strings.Split(keyURLString, "/transfer")[0], config.Configuration.Kms.APIURL+"keys/")[1]
 			}
 
 			wrappedKeyFilePath := "/tmp/wrappedKey_" + keyID
@@ -64,8 +64,8 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 
 			//Run docker build command to build encrypted image
 			cmd := exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tag,
-				"--storage-opt", "RequiresConfidentiality=true", "--storage-opt", "KeyFilePath="+wrappedKeyFile.Name(),
-				"--squash", "-f", dockerFilePath, buildDir)
+				"--imgcrypt-opt", "RequiresConfidentiality=true", "--imgcrypt-opt", "KeyFilePath="+wrappedKeyFile.Name(),
+				"--imgcrypt-opt", "KeyType=key-type-kms", "-f", dockerFilePath, buildDir)
 
 			_, err = cmd.CombinedOutput()
 			if err != nil {
