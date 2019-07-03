@@ -13,7 +13,6 @@ import (
 	"intel/isecl/lib/flavor"
 	"intel/isecl/wpm/consts"
 	"intel/isecl/wpm/pkg/util"
-	"intel/isecl/lib/common/validation"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -29,16 +28,6 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 	encRequired := true
 	imageFilePath := inputImageFilePath
 
-	//Return usage if input params are provided incorrectly
-	if len(strings.TrimSpace(flavorLabel)) <= 0 || len(strings.TrimSpace(inputImageFilePath)) <= 0 {
-		return "", errors.New(Usage())
-	}
-
-	inputArr := []string{flavorLabel, outputFlavorFilePath, inputImageFilePath, outputEncImageFilePath}
-	if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
-		return "", validationErr
-	}
-
 	//Determine if encryption is required
 	outputEncImageFilePath = strings.TrimSpace(outputEncImageFilePath)
 	if len(outputEncImageFilePath) <= 0 {
@@ -53,14 +42,9 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 
 	//Encrypt the image with the key
 	if encRequired {
-		//If the key ID is specified, make sure it's a valid UUID		
-		if len(strings.TrimSpace(keyID)) > 0 {
-			if validatekeyIDErr := validation.ValidateUUID(keyID); validatekeyIDErr != nil {
-				return "", errors.New("incorrectly formatted key ID")
-			}
-		}
+		// fetch the key to encrypt the image
 		wrappedKey, keyURLString, err = util.FetchKey(keyID)
-
+		// encrypt the image with key retrieved from KBS
 		err = util.Encrypt(inputImageFilePath, consts.EnvelopePrivatekeyLocation, outputEncImageFilePath, wrappedKey)
 		if err != nil {
 			return "", errors.New("error encrypting image: " + err.Error())
@@ -100,17 +84,4 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 		return "", errors.New("error writing image flavor to output file")
 	}
 	return "", err
-}
-
-//Usage command line usage string
-func Usage() string {
-	return "usage: wpm create-image-flavor [-l label] [-i in] [-o out] [-e encout] [-k key]\n" +
-		"  -l, --label     image flavor label\n" +
-		"  -i, --in        input image file path\n" +
-		"  -o, --out       (optional) output image flavor file path\n" +
-		"                  if not specified, will print to the console\n" +
-		"  -e, --encout    (optional) output encrypted image file path\n" +
-		"                  if not specified, encryption is skipped\n" +
-		"  -k, --key       (optional) existing key ID\n" +
-		"                  if not specified, a new key is generated\n"
 }
