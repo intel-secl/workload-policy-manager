@@ -1,10 +1,12 @@
 package main
 
 import (
+	"crypto/md5"
 	"errors"
 	"flag"
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
+	"intel/isecl/lib/common/validation"
 	"intel/isecl/wpm/config"
 	"intel/isecl/wpm/consts"
 	containerImageFlavor "intel/isecl/wpm/pkg/containerimageflavor"
@@ -12,16 +14,25 @@ import (
 	"intel/isecl/wpm/pkg/setup"
 	"intel/isecl/wpm/pkg/util"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	Version string = ""
+	Time    string = ""
+	Branch  string = ""
+)
 
-const WPM_HOME="/opt/wpm"
+func printVersion() {
+	fmt.Printf("Version %s\nBuild %s at %s\n", Version, Branch, Time)
+}
 
 func main() {
 	args := os.Args[1:]
@@ -45,6 +56,18 @@ func main() {
 				Tasks: []csetup.Task{
 					setup.CreateEnvelopeKey{},
 					setup.RegisterEnvelopeKey{},
+					csetup.Download_Cert{
+						Flags:              args,
+						KeyFile:            consts.FlavorSigningKeyPath,
+						CertFile:           consts.FlavorSigningCertPath,
+						KeyAlgorithm:       consts.DefaultKeyAlgorithm,
+						KeyAlgorithmLength: consts.DefaultKeyAlgorithmLength,
+						CommonName:         consts.DefaultWpmFlavorSgningCn,
+						SanList:            consts.DefaultWpmSan,
+						CertType:           "Flavor-Signing",
+						BearerToken:        "",
+						ConsoleWriter:      os.Stdout,
+					},
 				},
 				AskInput: false,
 			}
@@ -70,8 +93,31 @@ func main() {
 		flag.StringVar(outputEncImageFilePath, "encout", "", "output encrypted image file path")
 		keyID := flag.String("k", "", "existing key ID")
 		flag.StringVar(keyID, "key", "", "existing key ID")
-		flag.Usage = func() { fmt.Println(imageFlavor.Usage()) }
+		flag.Usage = func() { imageFlavorUsage() }
 		flag.CommandLine.Parse(os.Args[2:])
+
+		if len(strings.TrimSpace(*flavorLabel)) <= 0 || len(strings.TrimSpace(*inputImageFilePath)) <= 0 {
+			fmt.Println("Flavor label and image file path should be given.")
+			imageFlavorUsage()
+			os.Exit(1)
+		}
+
+		// validate input strings
+		inputArr := []string{*flavorLabel, *outputFlavorFilePath, *inputImageFilePath, *outputEncImageFilePath}
+		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
+			fmt.Println("Invalid string format")
+			imageFlavorUsage()
+			os.Exit(1)
+		}
+
+		//If the key ID is specified, make sure it's a valid UUID
+		if len(strings.TrimSpace(*keyID)) > 0 {
+			if validatekeyIDErr := validation.ValidateUUIDv4(*keyID); validatekeyIDErr != nil {
+				fmt.Println("Invalid Key UUID format")
+				imageFlavorUsage()
+				os.Exit(1)
+			}
+		}
 
 		imageFlavor, err := imageFlavor.CreateImageFlavor(*flavorLabel, *outputFlavorFilePath, *inputImageFilePath,
 			*outputEncImageFilePath, *keyID, false)
@@ -84,29 +130,55 @@ func main() {
 		}
 
 	case "create-container-image-flavor":
-		imageName := flag.String("n", "", "container image name")
-		flag.StringVar(imageName, "img-name", "", "container image name")
-		tagName := flag.String("t", "latest", "container image tag")
-		flag.StringVar(tagName, "tag-name", "latest", "container image tag")
+		imageName := flag.String("i", "", "docker image name")
+		flag.StringVar(imageName, "img-name", "", "docker image name")
+		tagName := flag.String("t", "latest", "docker image tag")
+		flag.StringVar(tagName, "tag", "latest", "docker image tag")
 		dockerFilePath := flag.String("f", "", "Dockerfile path")
 		flag.StringVar(dockerFilePath, "docker-file", "", "Dockerfile path")
-		buildDir := flag.String("d", "", "build directory path containing source to build the container image")
-		flag.StringVar(buildDir, "build-dir", "", "build directory path containing source to build the container image")
-		keyID := flag.String("k", "", "key ID of key used for encrypting the container image")
-		flag.StringVar(keyID, "key-id", "", "key ID of key used for encrypting the container image")
-		encryptionRequired := flag.Bool("enc", false, "specifies if image needs to be encrypted")
+		buildDir := flag.String("d", "", "build directory path containing source to build the docker image")
+		flag.StringVar(buildDir, "build-dir", "", "build directory path containing source to build the docker image")
+		keyID := flag.String("k", "", "key ID of key used for encrypting the image")
+		flag.StringVar(keyID, "key-id", "", "key ID of key used for encrypting the image")
+		encryptionRequired := flag.Bool("e", false, "specifies if image needs to be encrypted")
 		flag.BoolVar(encryptionRequired, "encryption-required", false, "specifies if image needs to be encrypted")
-		integrityEnforced := flag.Bool("enforce", false, "specifies if workload flavor should be enforced on image during launch")
-		flag.BoolVar(integrityEnforced, "integrity-enforced", false, "specifies if workload flavor should be enforced on image during launch")
-		notaryServerUrl := flag.String("s", "", "notary server url to pull signed images")
-		flag.StringVar(notaryServerUrl, "notary-server", "", "notary server url to pull signed images")
+		integrityEnforced := flag.Bool("s", false, "specifies if container image should be signed")
+		flag.BoolVar(integrityEnforced, "integrity-enforced", false, "specifies if container image needs to be signed")
+		notaryServerURL := flag.String("n", "", "notary server url to pull signed images")
+		flag.StringVar(notaryServerURL, "notary-server", "", "notary server url to pull signed images")
 		outputFlavorFilePath := flag.String("o", "", "output flavor file path")
 		flag.StringVar(outputFlavorFilePath, "out-file", "", "output flavor file path")
-		flag.Usage = func() { fmt.Println(containerImageFlavor.Usage()) }
+		flag.Usage = func() { containerFlavorUsage() }
 		flag.CommandLine.Parse(os.Args[2:])
 
+		// validate input strings
+		inputArr := []string{*imageName, *tagName, *dockerFilePath, *buildDir, *outputFlavorFilePath}
+		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
+			fmt.Println("Invalid string format")
+			containerFlavorUsage()
+			os.Exit(1)
+		}
+
+		//If the key ID is specified, make sure it's a valid UUID
+		if len(strings.TrimSpace(*keyID)) > 0 {
+			if validatekeyIDErr := validation.ValidateUUIDv4(*keyID); validatekeyIDErr != nil {
+				fmt.Println("Invalid Key UUID format")
+				containerFlavorUsage()
+				os.Exit(1)
+			}
+		}
+
+		notaryServerURIValue, _ := url.Parse(*notaryServerURL)
+		protocol := make(map[string]byte)
+		protocol["https"] = 0
+		if validateURLErr := validation.ValidateURL(*notaryServerURL, protocol, notaryServerURIValue.RequestURI()); validateURLErr != nil {
+			fmt.Printf("Invalid key URL format: %s\n", validateURLErr.Error())
+			containerFlavorUsage()
+			os.Exit(1)
+		}
+
 		containerImageFlavor, err := containerImageFlavor.CreateContainerImageFlavor(*imageName, *tagName, *dockerFilePath, *buildDir,
-			*keyID, *encryptionRequired, *integrityEnforced, *notaryServerUrl, *outputFlavorFilePath)
+			*keyID, *encryptionRequired, *integrityEnforced, *notaryServerURL, *outputFlavorFilePath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 			os.Exit(1)
@@ -116,15 +188,23 @@ func main() {
 		}
 
 	case "unwrap-key":
-		wrappedKeyFilePath := flag.String("f", "", "wrapped key file path")
-		flag.StringVar(wrappedKeyFilePath, "key-file-path", "", "wrapped key file path")
+		wrappedKeyFilePath := flag.String("i", "", "wrapped key file path")
+		flag.StringVar(wrappedKeyFilePath, "in", "", "wrapped key file path")
 		flag.CommandLine.Parse(os.Args[2:])
+
+		// validate input strings
+		inputArr := []string{*wrappedKeyFilePath}
+		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
+			fmt.Println("Invalid key file path string")
+			os.Exit(1)
+		}
 
 		wrappedKey, err := ioutil.ReadFile(*wrappedKeyFilePath)
 		if err != nil {
 			fmt.Println("Cannot read from file: " + err.Error())
 			os.Exit(1)
 		}
+
 		unwrappedKey, err := util.UnwrapKey(wrappedKey, consts.EnvelopePrivatekeyLocation)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -132,33 +212,38 @@ func main() {
 		}
 		fmt.Println(unwrappedKey)
 
+	case "get-container-image-id":
+		if len(args[1:]) < 1 {
+			fmt.Println("Invalid number of parameters")
+			os.Exit(1)
+		}
+		NameSpaceDNS := uuid.Must(uuid.Parse("6ba7b810-9dad-11d1-80b4-00c04fd430c8"))
+		imageUUID := uuid.NewHash(md5.New(), NameSpaceDNS, []byte(args[1]), 4)
+		fmt.Println(imageUUID)
+
 	case "uninstall":
 		fmt.Println("Uninstalling WPM")
-	        _, err = exec.Command("ls", consts.OptDirPath+"/secure-docker-daemon").Output()
-                if err == nil {
-                   removeSecureDockerDaemon()
-                }
-
-		errorFiles, err := deleteFiles("/usr/local/bin/wpm", consts.OptDirPath, consts.ConfigDirPath, consts.LogDirPath)
-		if err != nil {
-			fmt.Println(err)
-			fmt.Println(errorFiles)
+		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
+			deleteFiles(consts.ConfigDirPath)
 		}
-                
+		errorFiles, err := deleteFiles(consts.WpmSymLink, consts.OptDirPath, consts.ConfigDirPath, consts.LogDirPath)
+		if err != nil {
+			fmt.Printf("Error deleting files : %s", errorFiles)
+		}
+
 	case "help", "-help", "--help":
 		usage()
+
+	case "--version", "-v", "version", "-version":
+		printVersion()
+
+	case "create-software-flavor":
+		fmt.Println("Not supported")
 
 	default:
 		fmt.Printf("Unrecognized option : %s\n", arg)
 		usage()
 	}
-}
-
-func removeSecureDockerDaemon(){
-         _, err := exec.Command(WPM_HOME+"/secure-docker-daemon/uninstall-secure-docker-daemon.sh").Output()
-         if err != nil {
-                 fmt.Println(err)
-         }
 }
 
 func runCommand(cmd string, args []string) (string, error) {
@@ -167,13 +252,21 @@ func runCommand(cmd string, args []string) (string, error) {
 }
 
 func usage() {
-	fmt.Printf("Usage: $0 uninstall|create-image-flavor|create-container-image-flavor|create-software-flavor\n")
-	fmt.Printf("Usage: $0 setup [--force|--noexec] [task1 task2 ...]\n")
-	fmt.Printf("Available setup tasks: CreateEnvelopKey and RegisterEnvelopeKeyWithKBS\n")
+	fmt.Printf("Workload Policy Manager\n")
+	fmt.Printf("usage : %s <command> [<args>]\n\n", os.Args[0])
+	fmt.Printf("Following are the list of commands\n")
+	fmt.Printf("\tcreate-image-flavor|create-container-image-flavor|get-container-image-id|create-software-flavor|uninstall|--help|--version\n\n")
+	fmt.Printf("\tusage : %s setup [<tasklist>]\n", os.Args[0])
+	fmt.Printf("\t\t<tasklist>-space separated list of tasks\n")
+	fmt.Printf("\t\t\t-Supported tasks - CreateEnvelopeKey and RegisterEnvelopeKey\n")
+	fmt.Printf("\tExample :-\n")
+	fmt.Printf("\t\t%s setup\n", os.Args[0])
+	fmt.Printf("\t\t%s setup CreateEnvelopeKey\n", os.Args[0])
 }
 
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
 	for _, path := range filePath {
+		log.Info("\n Deleting : ", path)
 		err := os.RemoveAll(path)
 		if err != nil {
 			errorFiles = append(errorFiles, path)
@@ -183,4 +276,38 @@ func deleteFiles(filePath ...string) (errorFiles []string, err error) {
 		return errorFiles, errors.New("error deleting files")
 	}
 	return nil, nil
+}
+
+//Usage command line usage string
+func imageFlavorUsage() {
+	fmt.Println("usage: wpm create-image-flavor [-l label] [-i in] [-o out] [-e encout] [-k key]\n" +
+		"  -l, --label     image flavor label\n" +
+		"  -i, --in        input image file path\n" +
+		"  -o, --out       (optional) output image flavor file path\n" +
+		"                  if not specified, will print to the console\n" +
+		"  -e, --encout    (optional) output encrypted image file path\n" +
+		"                  if not specified, encryption is skipped\n" +
+		"  -k, --key       (optional) existing key ID\n" +
+		"                  if not specified, a new key is generated\n")
+}
+
+//Usage command line usage string
+func containerFlavorUsage() {
+	fmt.Println("usage: wpm create-container-image-flavor [-i img-name] [-t tag] [-f dockerFile] [-d build-dir] [-k keyId]\n" +
+		"                            [-e] [-s] [-n notaryServer] [-o out-file]\n" +
+		"  -i,       --img-name                     container image name\n" +
+		"  -t,       --tag                          (optional)container image tag name\n" +
+		"  -f,       --docker-file                  (optional) container file path\n" +
+		"                                           to build the container image\n" +
+		"  -d,       --build-dir                    (optional) build directory to\n" +
+		"                                           build the container image\n" +
+		"  -k,       --key-id                       (optional) existing key ID\n" +
+		"                                           if not specified, a new key is generated\n" +
+		"  -e,     --encryption-required            (optional) boolean parameter specifies if\n" +
+		"                                           container image needs to be encrypted\n" +
+		"  -s, 	   --integrity-enforced             (optional) boolean parameter specifies if\n" +
+		"                                           container image should be signed\n" +
+		"  -n,       --notary-server                (optional) specify notary server url\n" +
+		"  -o,       --out-file                     (optional) specify output file path\n")
+
 }

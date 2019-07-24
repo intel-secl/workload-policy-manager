@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"errors"
 	"intel/isecl/lib/flavor"
+	flavorUtil "intel/isecl/lib/flavor/util"
 	"intel/isecl/wpm/config"
+	"intel/isecl/wpm/consts"
 	"intel/isecl/wpm/pkg/util"
 	"io/ioutil"
 	"os"
@@ -102,13 +104,15 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 		return "", errors.New("error while marshalling image flavor:" + err.Error())
 	}
 
+	signedFlavor, err := flavorUtil.GetSignedFlavor(string(containerImageFlavorJSON), consts.FlavorSigningKeyPath)
+
 	//If no output flavor file path was specified, return the marshalled image flavor
 	if len(strings.TrimSpace(outputFlavorFilePath)) <= 0 {
-		return string(containerImageFlavorJSON), nil
+		return signedFlavor, nil
 	}
 
 	//Otherwise, write it to the specified file
-	err = ioutil.WriteFile(outputFlavorFilePath, containerImageFlavorJSON, 0600)
+	err = ioutil.WriteFile(outputFlavorFilePath, []byte(signedFlavor), 0600)
 	if err != nil {
 		return "", errors.New("error writing image flavor to output file")
 	}
