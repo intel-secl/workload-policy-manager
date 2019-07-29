@@ -62,6 +62,7 @@ WPM_HOME=/opt/wpm
 WPM_BIN=/opt/wpm/bin
 WPM_SYMLINK=/usr/local/bin/wpm
 WPM_CONFIGURATION=/etc/${APPLICATION}
+WPM_CA_CONFIGURATION=/etc/${APPLICATION}/cacerts/
 WPM_LOGS=/var/log/${APPLICATION}
 INSTALL_LOG_FILE=$WPM_LOGS/install.log
 
@@ -92,7 +93,7 @@ fi
 
 echo_info "Creating application directories and assigning permissions...."
 # 8. create application directories (chown will be repeated near end of this script, after setup)
-for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN; do
+for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN $WPM_CA_CONFIGURATION; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
   mkdir -p $directory
   if [ $? -ne 0 ]; then

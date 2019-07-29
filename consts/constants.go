@@ -13,6 +13,7 @@ const (
 	ConfigFilePath             = ConfigDirPath + "config.yml"
 	FlavorSigningCertPath      = ConfigDirPath + "flavor-signing-cert.pem"
 	FlavorSigningKeyPath       = ConfigDirPath + "flavor-signing-key.pem"
+	TrustedCaCertsDir          = ConfigDirPath + "cacerts/"
 	DefaultKeyAlgorithm        = "rsa"
 	DefaultKeyAlgorithmLength  = 3072
 	CertApproverGroupName      = "CertApprover"
