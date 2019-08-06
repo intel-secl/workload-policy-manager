@@ -138,13 +138,21 @@ if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY"
   if [ $? -ne 0 ]; then
     echo "Installing cryptsetup"
     yum install -y cryptsetup
-  fi
+  fi 
   echo "Installing secure docker daemon"
   systemctl stop docker
   mkdir -p $WPM_HOME/secure-docker-daemon/backup
-  cp /usr/bin/docker* $WPM_HOME/secure-docker-daemon/backup/
+  cp /usr/bin/docker $WPM_HOME/secure-docker-daemon/backup/
   chown -R root:root docker-daemon
-  cp -f docker-daemon/* /usr/bin/
+  cp -f docker-daemon/docker /usr/bin/
+  which /usr/bin/dockerd-ce 2>/dev/null
+  if [ $? -ne 0 ]; then
+    cp /usr/bin/dockerd $WPM_HOME/secure-docker-daemon/backup/
+    cp -f docker-daemon/dockerd-ce /usr/bin/dockerd
+  else
+    cp /usr/bin/dockerd-ce $WPM_HOME/secure-docker-daemon/backup/
+    cp -f docker-daemon/dockerd-ce /usr/bin/dockerd-ce
+  fi
   mkdir -p /etc/docker
   cp daemon.json /etc/docker/
   echo "Restarting docker"
