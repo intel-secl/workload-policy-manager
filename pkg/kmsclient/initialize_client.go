@@ -9,8 +9,8 @@ import (
 
 func InitializeClient() (*kms.Client, error) {
 	var kc *kms.Client
-	var certificateDigest [32]byte
-	certDigestHex, err := hex.DecodeString(config.Configuration.Kms.TLSSha256)
+	var certificateDigest [48]byte
+	certDigestHex, err := hex.DecodeString(config.Configuration.Kms.TLSSha384)
 	if err != nil {
 		return kc, errors.New("error converting certificate digest to hex. " + err.Error())
 	}
@@ -19,7 +19,7 @@ func InitializeClient() (*kms.Client, error) {
 		BaseURL:    config.Configuration.Kms.APIURL,
 		Username:   config.Configuration.Kms.APIUsername,
 		Password:   config.Configuration.Kms.APIPassword,
-		CertSha256: &certificateDigest,
+		CertSha384: &certificateDigest,
 	}
 	return kc, err
 }

@@ -34,7 +34,7 @@ func (ek CreateEnvelopeKey) Validate(c csetup.Context) error {
 func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 	log.Info("Creating envelope key")
 
-	bitSize := 2048
+	bitSize := consts.DefaultKeyAlgorithmLength
 	keyPair, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
 		return errors.New("error while generating a new RSA key pair")

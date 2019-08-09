@@ -6,7 +6,7 @@ package imageflavor
  *
  */
 import (
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -60,7 +60,7 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 	}
 
 	//Take the digest of the encrypted image
-	digest := sha256.Sum256([]byte(imageFile))
+	digest := sha512.Sum384([]byte(imageFile))
 
 	//Create image flavor
 	imageFlavor, err := flavor.GetImageFlavor(flavorLabel, encRequired, keyURLString, base64.StdEncoding.EncodeToString(digest[:]))

@@ -22,7 +22,7 @@ var Configuration struct {
 		APIURL      string
 		APIUsername string
 		APIPassword string
-		TLSSha256   string
+		TLSSha384   string
 	}
 }
 
@@ -71,7 +71,7 @@ func SaveConfiguration(c csetup.Context) error {
 	if err != nil {
 		return err
 	}
-	Configuration.Kms.TLSSha256, err = c.GetenvString(consts.KMS_TLS_SHA256, "Kms TLS SHA256")
+	Configuration.Kms.TLSSha384, err = c.GetenvString(consts.KMS_TLS_SHA384, "Kms TLS SHA384")
 	if err != nil {
 		return err
 	}

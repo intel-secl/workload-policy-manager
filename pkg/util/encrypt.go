@@ -6,7 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/x509"
 	"encoding/binary"
 	"encoding/pem"
@@ -83,7 +83,7 @@ func UnwrapKey(wrappedKey []byte, privateKeyLocation string) ([]byte, error) {
 		return unwrappedKey, errors.New("error while parsing the private key")
 	}
 
-	decryptedKey, errDecrypt := rsa.DecryptOAEP(sha256.New(), rand.Reader, pri, wrappedKey, nil)
+	decryptedKey, errDecrypt := rsa.DecryptOAEP(sha512.New384(), rand.Reader, pri, wrappedKey, nil)
 	if errDecrypt != nil {
 		return unwrappedKey, errors.New("error while unwraping the key")
 	}

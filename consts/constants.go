@@ -4,7 +4,7 @@ const (
 	KMS_API_URL                = "KMS_API_URL"
 	KMS_API_USERNAME           = "KMS_API_USERNAME"
 	KMS_API_PASSWORD           = "KMS_API_PASSWORD"
-	KMS_TLS_SHA256             = "KMS_TLS_SHA256"
+	KMS_TLS_SHA384             = "KMS_TLS_SHA384"
 	KmsEncryptAlgo             = "AES"
 	KmsKeyLength               = 256
 	KmsCipherMode              = "GCM"
