@@ -14,7 +14,7 @@ import (
 	"intel/isecl/wpm/pkg/setup"
 	"intel/isecl/wpm/pkg/util"
 	"io/ioutil"
-	"net/url"
+	//"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -56,6 +56,11 @@ func main() {
 				Tasks: []csetup.Task{
 					setup.CreateEnvelopeKey{},
 					setup.RegisterEnvelopeKey{},
+					csetup.Download_Ca_Cert{
+						Flags:         args,
+						CaCertDirPath: consts.TrustedCaCertsDir,
+						ConsoleWriter: os.Stdout,
+					},
 					csetup.Download_Cert{
 						Flags:              args,
 						KeyFile:            consts.FlavorSigningKeyPath,
@@ -65,6 +70,7 @@ func main() {
 						CommonName:         consts.DefaultWpmFlavorSgningCn,
 						SanList:            consts.DefaultWpmSan,
 						CertType:           "Flavor-Signing",
+						CaCertsDir:         consts.TrustedCaCertsDir,
 						BearerToken:        "",
 						ConsoleWriter:      os.Stdout,
 					},
@@ -168,13 +174,15 @@ func main() {
 			}
 		}
 
-		notaryServerURIValue, _ := url.Parse(*notaryServerURL)
-		protocol := make(map[string]byte)
-		protocol["https"] = 0
-		if validateURLErr := validation.ValidateURL(*notaryServerURL, protocol, notaryServerURIValue.RequestURI()); validateURLErr != nil {
-			fmt.Printf("Invalid key URL format: %s\n", validateURLErr.Error())
-			containerFlavorUsage()
-			os.Exit(1)
+		if *notaryServerURL != "" {
+			notaryServerURIValue, _ := url.Parse(*notaryServerURL)
+			protocol := make(map[string]byte)
+			protocol["https"] = 0
+			if validateURLErr := validation.ValidateURL(*notaryServerURL, protocol, notaryServerURIValue.RequestURI()); validateURLErr != nil {
+				fmt.Printf("Invalid key URL format: %s\n", validateURLErr.Error())
+				containerFlavorUsage()
+				os.Exit(1)
+			}
 		}
 
 		containerImageFlavor, err := containerImageFlavor.CreateContainerImageFlavor(*imageName, *tagName, *dockerFilePath, *buildDir,
@@ -261,7 +269,19 @@ func usage() {
 	fmt.Printf("\t\t\t-Supported tasks - CreateEnvelopeKey and RegisterEnvelopeKey\n")
 	fmt.Printf("\tExample :-\n")
 	fmt.Printf("\t\t%s setup\n", os.Args[0])
-	fmt.Printf("\t\t%s setup CreateEnvelopeKey\n", os.Args[0])
+	fmt.Printf("\t\t%s setup CreateEnvelopeKey\n", os.Args[0])	
+	fmt.Printf("\t\t%s setup download_ca_cert [--force]\n", os.Args[0])
+	fmt.Printf("\t\t        - Download CMS root CA certificate\n")
+	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads new root CA cert\n")
+	fmt.Printf("\t\t       - Environment variable CMS_BASE_URL=<url> for CMS API url\n")
+	fmt.Printf("\t\t%s setup download_cert Flavor-Signing [--force]\n", os.Args[0])
+	fmt.Printf("\t\t        - Generates Key pair and CSR, gets it signed from CMS\n")
+	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads newly signed Flavor Signing cert\n")
+	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API url\n")
+	fmt.Printf("\t\t        - Environment variable BEARER_TOKEN=<token> for authenticating with CMS\n")	
+	fmt.Printf("\t\t        - Environment variable KEY_PATH=<key_path> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable CERT_PATH=<cert_path> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable COMMON_NAME=<CN> to override default specified in config\n")
 }
 
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
