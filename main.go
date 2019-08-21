@@ -14,7 +14,7 @@ import (
 	"intel/isecl/wpm/pkg/setup"
 	"intel/isecl/wpm/pkg/util"
 	"io/ioutil"
-	//"net/url"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
