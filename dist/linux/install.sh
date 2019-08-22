@@ -110,6 +110,9 @@ if [ -f "$existing_wpm" ]; then
  exit 0
 fi
 
+cp -f $APPLICATION $WPM_BIN/wpm
+ln -sfT $WPM_BIN/wpm $WPM_SYMLINK
+echo_success "WPM installation complete"
 
 # exit wpm setup if WPM_NOSETUP is set
 if [ -n "$WPM_NOSETUP" ]; then

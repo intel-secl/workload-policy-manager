@@ -8,8 +8,7 @@ import (
 	"errors"
 	log "github.com/sirupsen/logrus"
 	csetup "intel/isecl/lib/common/setup"
-	kms "intel/isecl/lib/kms-client"
-	config "intel/isecl/wpm/config"
+	"intel/isecl/lib/kms-client"
 	"intel/isecl/wpm/consts"
 	"intel/isecl/wpm/pkg/kmsclient"
 	"io/ioutil"
@@ -67,12 +66,6 @@ func (re RegisterEnvelopeKey) Validate(c csetup.Context) error {
 //RegisterEnvelopeKey method is used to register the envelope public key with the KBS user
 func (re RegisterEnvelopeKey) Run(c csetup.Context) error {
 	log.Info("Registering envelope key")
-
-	// save configuration from config.yml
-	e := config.SaveConfiguration(c)
-	if e != nil {
-		return errors.New("error saving configuration. " + e.Error())
-	}
 
 	publicKey, err := ioutil.ReadFile(consts.EnvelopePublickeyLocation)
 	if err != nil {

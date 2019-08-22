@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/md5"
+	"crypto/x509/pkix"
 	"errors"
 	"flag"
 	"fmt"
@@ -35,6 +36,7 @@ func printVersion() {
 }
 
 func main() {
+	var context csetup.Context
 	args := os.Args[1:]
 	if len(args) <= 0 {
 		usage()
@@ -47,10 +49,18 @@ func main() {
 		log.Error("error in configuring logs.")
 	}
 
+	// save configuration from config.yml
+	err = config.SaveConfiguration(context)
+	if err != nil {
+		fmt.Println("error saving configuration. " + err.Error())
+		os.Exit(1)
+	}
+
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
 		// Check if nosetup environment variable is true, if yes then skip the setup tasks
 		if nosetup, err := strconv.ParseBool(os.Getenv("WPM_NOSETUP")); err != nil && nosetup == false {
+
 			// Run list of setup tasks one by one
 			setupRunner := &csetup.Runner{
 				Tasks: []csetup.Task{
@@ -58,6 +68,7 @@ func main() {
 					setup.RegisterEnvelopeKey{},
 					csetup.Download_Ca_Cert{
 						Flags:         args,
+						CmsBaseURL:    config.Configuration.Cms.BaseUrl,
 						CaCertDirPath: consts.TrustedCaCertsDir,
 						ConsoleWriter: os.Stdout,
 					},
@@ -67,7 +78,14 @@ func main() {
 						CertFile:           consts.FlavorSigningCertPath,
 						KeyAlgorithm:       consts.DefaultKeyAlgorithm,
 						KeyAlgorithmLength: consts.DefaultKeyAlgorithmLength,
-						CommonName:         consts.DefaultWpmFlavorSgningCn,
+						CmsBaseURL:         config.Configuration.Cms.BaseUrl,
+						Subject:         	pkix.Name{
+							Country:            []string{config.Configuration.Subject.Country},
+							Organization:       []string{config.Configuration.Subject.Organization},
+							Locality:           []string{config.Configuration.Subject.Locality},
+							Province:           []string{config.Configuration.Subject.Province},
+							CommonName:         config.Configuration.Subject.CommonName,
+						},
 						SanList:            consts.DefaultWpmSan,
 						CertType:           "Flavor-Signing",
 						CaCertsDir:         consts.TrustedCaCertsDir,
