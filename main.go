@@ -58,6 +58,13 @@ func main() {
 
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
+		flags := args
+		if len(args) > 1 {
+			flags = args[2:]
+			if args[1] == "download_cert" && len(args) > 2 {
+				flags = args[3:]
+			}
+		}
 		// Check if nosetup environment variable is true, if yes then skip the setup tasks
 		if nosetup, err := strconv.ParseBool(os.Getenv("WPM_NOSETUP")); err != nil && nosetup == false {
 
@@ -67,13 +74,13 @@ func main() {
 					setup.CreateEnvelopeKey{},
 					setup.RegisterEnvelopeKey{},
 					csetup.Download_Ca_Cert{
-						Flags:         args,
+						Flags:         flags,
 						CmsBaseURL:    config.Configuration.Cms.BaseUrl,
 						CaCertDirPath: consts.TrustedCaCertsDir,
 						ConsoleWriter: os.Stdout,
 					},
 					csetup.Download_Cert{
-						Flags:              args,
+						Flags:              flags,
 						KeyFile:            consts.FlavorSigningKeyPath,
 						CertFile:           consts.FlavorSigningCertPath,
 						KeyAlgorithm:       consts.DefaultKeyAlgorithm,
