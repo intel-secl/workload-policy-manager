@@ -136,7 +136,7 @@ func SaveConfiguration(c csetup.Context) error {
 	certLocality, err := c.GetenvString(consts.WpmCertLocalityEnv, "Locality")
 	if err == nil && certLocality != "" {
 		Configuration.Subject.Locality = certLocality
-	} else if err != nil || Configuration.Subject.Locality == "" {
+	} else if Configuration.Subject.Locality == "" {
 			Configuration.Subject.Locality = consts.DefaultWpmLocality
 	}
 	return Save()
