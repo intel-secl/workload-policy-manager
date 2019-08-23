@@ -49,22 +49,33 @@ func main() {
 		log.Error("error in configuring logs.")
 	}
 
-	// save configuration from config.yml
-	err = config.SaveConfiguration(context)
-	if err != nil {
-		fmt.Println("error saving configuration. " + err.Error())
-		os.Exit(1)
-	}
-
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
 		flags := args
+
+		if len(args) >= 2 &&
+			args[1] != "CreateEnvelopeKey" &&
+			args[1] != "RegisterEnvelopeKey" &&
+			args[1] != "download_ca_cert" &&
+			args[1] != "download_cert" {
+			usage()
+			os.Exit(1)
+		}
+
 		if len(args) > 1 {
 			flags = args[2:]
 			if args[1] == "download_cert" && len(args) > 2 {
 				flags = args[3:]
 			}
 		}
+
+		// save configuration from config.yml
+		err = config.SaveConfiguration(context)
+		if err != nil {
+			fmt.Println("Error saving configuration. " + err.Error())
+			os.Exit(1)
+		}
+
 		// Check if nosetup environment variable is true, if yes then skip the setup tasks
 		if nosetup, err := strconv.ParseBool(os.Getenv("WPM_NOSETUP")); err != nil && nosetup == false {
 
@@ -294,7 +305,8 @@ func usage() {
 	fmt.Printf("\t\t\t-Supported tasks - CreateEnvelopeKey and RegisterEnvelopeKey\n")
 	fmt.Printf("\tExample :-\n")
 	fmt.Printf("\t\t%s setup\n", os.Args[0])
-	fmt.Printf("\t\t%s setup CreateEnvelopeKey\n", os.Args[0])	
+	fmt.Printf("\t\t%s setup CreateEnvelopeKey\n", os.Args[0])
+	fmt.Printf("\t\t%s setup RegisterEnvelopeKey\n", os.Args[0])
 	fmt.Printf("\t\t%s setup download_ca_cert [--force]\n", os.Args[0])
 	fmt.Printf("\t\t        - Download CMS root CA certificate\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads new root CA cert\n")
@@ -306,7 +318,11 @@ func usage() {
 	fmt.Printf("\t\t        - Environment variable BEARER_TOKEN=<token> for authenticating with CMS\n")	
 	fmt.Printf("\t\t        - Environment variable KEY_PATH=<key_path> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable CERT_PATH=<cert_path> to override default specified in config\n")
-	fmt.Printf("\t\t        - Environment variable COMMON_NAME=<CN> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable WPM_FLAVOR_SIGN_CERT_CN=<COMMON NAME> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable WPM_CERT_ORG=<CERTIFICATE ORGANIZATION> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable WPM_CERT_COUNTRY=<CERTIFICATE COUNTRY> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable WPM_CERT_LOCALITY=<CERTIFICATE LOCALITY> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable WPM_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config\n")
 }
 
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {

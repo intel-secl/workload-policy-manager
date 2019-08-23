@@ -13,7 +13,7 @@ require (
 	intel/isecl/lib/kms-client v0.0.0
 )
 
-replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common.git v0.0.0-20190822062148-db58c597c782
+replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common.git v0.0.0-20190823044814-bd0388ae202f
 
 replace intel/isecl/lib/flavor => gitlab.devtools.intel.com/sst/isecl/lib/flavor.git v0.0.0-20190724130420-55de0ba53dc1
 
