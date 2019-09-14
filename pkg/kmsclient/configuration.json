@@ -1,6 +1,0 @@
-{
-    "BaseURL": "https://10.105.168.214:443/v1",
-    "Username": "admin",
-    "Password": "password",
-    "KMSTlsCertSHA256": "313f4798df8605b37bf89d68bef596e0a7ce338088a48dd389553d80bb512b76"
-}

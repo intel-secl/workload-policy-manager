@@ -62,9 +62,15 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 				keyID = strings.Split(strings.Split(keyURLString, "/transfer")[0], config.Configuration.Kms.APIURL+"keys/")[1]
 			}
 
-			wrappedKeyFilePath := "/tmp/wrappedKey_" + keyID
-			os.Create(wrappedKeyFilePath)
-			err = ioutil.WriteFile(wrappedKeyFilePath, wrappedKey, 0600)
+			wrappedKeyFileName := "wrappedKey_" + keyID + "_"
+			wrappedKeyFile, err := ioutil.TempFile("/tmp", wrappedKeyFileName)
+			if err != nil {
+				return "", errors.New("could not create wrapped key file")
+			}
+			if _, err = wrappedKeyFile.Write(wrappedKey); err != nil {
+				return "", errors.New("could not write the wrapped key in to the file")
+			}
+			defer os.Remove(wrappedKeyFile.Name())
 
 			//Run docker build command to build encrypted image
 			cmd := exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tag,
@@ -73,7 +79,7 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 
 			_, err = cmd.CombinedOutput()
 			if err != nil {
-				return "", errors.New("could not build container image" + err.Error())
+				return "", errors.New("could not build container image with encryption" + err.Error())
 			}
 
 		} else {
