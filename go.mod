@@ -13,10 +13,10 @@ require (
 	intel/isecl/lib/kms-client v0.0.0
 )
 
-replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common.git v0.0.0-20190914055910-d4e37ee542ac
+replace intel/isecl/lib/common => github.com/intel-secl/common v1.6-beta
 
-replace intel/isecl/lib/flavor => gitlab.devtools.intel.com/sst/isecl/lib/flavor.git v0.0.0-20190913182643-9934595cf05d
+replace intel/isecl/lib/flavor => github.com/intel-secl/flavor v1.6-beta
 
-replace intel/isecl/lib/kms-client => gitlab.devtools.intel.com/sst/isecl/lib/kms-client.git v0.0.0-20190830104533-2fe503639fe0
+replace intel/isecl/lib/kms-client => github.com/intel-secl/kms-client v1.6-beta
 
-replace intel/isecl/authservice => gitlab.devtools.intel.com/sst/isecl/authservice.git v0.0.0-20190912170100-644d4e7ccec4
+replace intel/isecl/authservice => github.com/intel-secl/authservice v1.6-beta
