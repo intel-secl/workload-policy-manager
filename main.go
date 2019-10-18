@@ -109,7 +109,7 @@ func main() {
 							CommonName:         config.Configuration.Subject.CommonName,
 						},
 						SanList:            consts.DefaultWpmSan,
-						CertType:           "Flavor-Signing",
+						CertType:           "Signing",
 						CaCertsDir:         consts.TrustedCaCertsDir,
 						BearerToken:        "",
 						ConsoleWriter:      os.Stdout,
