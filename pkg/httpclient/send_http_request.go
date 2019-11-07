@@ -48,6 +48,17 @@ func addJWTToken(req *http.Request) error {
 	log.Trace("pkg/httpclient/send_http_request.go:addJWTToken() Entering")
 	defer log.Trace("pkg/httpclient/send_http_request.go:addJWTToken() Leaving")
 
+	if aasClient.BaseURL == "" {
+		aasClient = aas.NewJWTClient(config.Configuration.Aas.APIURL)
+		if aasClient.HTTPClient == nil {
+			c, err := clients.HTTPClientWithCADir(consts.TrustedCaCertsDir)
+			if err != nil {
+				return errors.Wrap(err, "clients/send_http_request.go:addJWTToken() Error initializing http client")
+			}
+			aasClient.HTTPClient = c
+		}
+	}
+
 	aasRWLock.RLock()
 	jwtToken, err := aasClient.GetUserToken(config.Configuration.Wpm.Username)
 	aasRWLock.RUnlock()
