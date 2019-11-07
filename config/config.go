@@ -6,27 +6,30 @@ package config
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"fmt"
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/wpm/consts"
 	"io"
 	"os"
-	"time"
+
+	commLog "intel/isecl/lib/common/log"
+	commLogInt "intel/isecl/lib/common/log/setup"
+
+	"github.com/sirupsen/logrus"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
-/*
- *
- * @author srege
- *
- */
+var (
+	log    = commLog.GetDefaultLogger()
+	secLog = commLog.GetSecurityLogger()
+)
 
 var Configuration struct {
 	Kms struct {
-		APIURL      string
-		APIUsername string
-		APIPassword string
-		TLSSha384   string
+		APIURL   string
+		Username string
+		Password string
 	}
 	Cms struct {
 		BaseUrl string
@@ -38,6 +41,14 @@ var Configuration struct {
 		Province     string
 		Country      string
 	}
+	Aas struct {
+		APIURL string
+	}
+	Wpm struct {
+		Username string
+		Password string
+	}
+	LogLevel logrus.Level
 }
 
 var LogWriter io.Writer
@@ -54,6 +65,9 @@ func init() {
 
 // Save the configuration struct into configuration directory
 func Save() error {
+	log.Trace("config/config:Save() Entering")
+	defer log.Trace("config/config:Save() Leaving")
+
 	file, err := os.OpenFile(consts.ConfigFilePath, os.O_RDWR, 0)
 	defer file.Close()
 	if err != nil {
@@ -72,34 +86,30 @@ func Save() error {
 // SaveConfiguration is used to save configurations that are provided in environment during setup tasks
 // This is called when setup tasks are called
 func SaveConfiguration(c csetup.Context) error {
+	log.Trace("config/config:SaveConfiguration() Entering")
+	defer log.Trace("config/config:SaveConfiguration() Leaving")
+
 	var err error
 
-	kmsApiUrl, err := c.GetenvString(consts.KMS_API_URL, "Kms URL")
+	kmsApiUrl, err := c.GetenvString(consts.KMSAPIURLEnv, "KMS URL")
 	if err == nil && kmsApiUrl != "" {
 		Configuration.Kms.APIURL = kmsApiUrl
 	} else if Configuration.Kms.APIURL == "" {
 		return errors.New("KMS API URL is not defined in environment or config file")
 	}
 
-	kmsApiUsername, err := c.GetenvString(consts.KMS_API_USERNAME, "Kms Username")
-	if err == nil && kmsApiUsername!= "" {
-		Configuration.Kms.APIUsername = kmsApiUsername
-	} else if Configuration.Kms.APIUsername == "" {
-		return errors.New("KMS API Username is not defined in environment or config file")
+	kmsUsername, err := c.GetenvString(consts.KMSUsernameEnv, "KMS Username")
+	if err == nil && kmsUsername != "" {
+		Configuration.Kms.Username = kmsUsername
+	} else if Configuration.Kms.Username == "" {
+		return errors.New("KMS Username is not defined in environment or config file")
 	}
 
-	kmsApiPassword, err := c.GetenvString(consts.KMS_API_PASSWORD, "Kms Password")
-	if err == nil && kmsApiPassword != ""{
-		Configuration.Kms.APIPassword = kmsApiPassword
-	} else if Configuration.Kms.APIPassword == "" {
-		return errors.New("KMS API Password is not defined in environment or config file")
-	}
-
-	kmsTlsSha384, err := c.GetenvString(consts.KMS_TLS_SHA384, "Kms TLS SHA384")
-	if err == nil && kmsTlsSha384 != ""{
-		Configuration.Kms.TLSSha384 = kmsTlsSha384
-	} else if Configuration.Kms.TLSSha384 == "" {
-		return errors.New("KMS TLS is not defined in environment or config file")
+	kmsPassword, err := c.GetenvString(consts.KMSPasswordEnv, "KMS Password")
+	if err == nil && kmsPassword != "" {
+		Configuration.Kms.Password = kmsPassword
+	} else if Configuration.Kms.Password == "" {
+		return errors.New("KMS Password is not defined in environment or config file")
 	}
 
 	cmsBaseUrl, err := c.GetenvString(consts.CmsBaseUrlEnv, "CMS Base URL")
@@ -109,53 +119,101 @@ func SaveConfiguration(c csetup.Context) error {
 		return errors.New("CMS Base URL is not defined in environment or config file")
 	}
 
+	aasAPIURL, err := c.GetenvString(consts.AasAPIURLEnv, "AAS API URL")
+	if err == nil && aasAPIURL != "" {
+		Configuration.Aas.APIURL = aasAPIURL
+	} else if Configuration.Aas.APIURL == "" {
+		return errors.New("AAS API URL is not defined in environment or config file")
+	}
+
+	wpmAASUsername, err := c.GetenvString(consts.ServiceUsername, "AAS API Username")
+	if err == nil && wpmAASUsername != "" {
+		Configuration.Wpm.Username = wpmAASUsername
+	} else if Configuration.Wpm.Username == "" {
+		return errors.New("WPM AAS Username is not defined in environment or config file")
+	}
+
+	wpmAASPassword, err := c.GetenvString(consts.ServicePassword, "AAS API Password")
+	if err == nil && wpmAASPassword != "" {
+		Configuration.Wpm.Password = wpmAASPassword
+	} else if Configuration.Wpm.Password == "" {
+		return errors.New("WPM AAS Password is not defined in environment or config file")
+	}
+
 	certCommonName, err := c.GetenvString(consts.WpmFlavorSignCertCommonNameEnv, "Common name")
 	if err == nil && certCommonName != "" {
 		Configuration.Subject.CommonName = certCommonName
 	} else if Configuration.Subject.CommonName == "" {
-			Configuration.Subject.CommonName = consts.DefaultWpmFlavorSigningCn
+		Configuration.Subject.CommonName = consts.DefaultWpmFlavorSigningCn
 	}
 
 	certOrg, err := c.GetenvString(consts.WpmCertOrganizationEnv, "Organization")
 	if err == nil && certOrg != "" {
 		Configuration.Subject.Organization = certOrg
 	} else if Configuration.Subject.Organization == "" {
-			Configuration.Subject.Organization = consts.DefaultWpmOrganization
+		Configuration.Subject.Organization = consts.DefaultWpmOrganization
 	}
 
 	certCountry, err := c.GetenvString(consts.WpmCertCountryEnv, "Country")
 	if err == nil && certCountry != "" {
 		Configuration.Subject.Country = certCountry
 	} else if Configuration.Subject.Country == "" {
-			Configuration.Subject.Country = consts.DefaultWpmCountry
+		Configuration.Subject.Country = consts.DefaultWpmCountry
 	}
 
 	certProvince, err := c.GetenvString(consts.WpmCertProvinceEnv, "Province")
 	if err == nil && certProvince != "" {
 		Configuration.Subject.Province = certProvince
 	} else if Configuration.Subject.Province == "" {
-			Configuration.Subject.Province = consts.DefaultWpmProvince
+		Configuration.Subject.Province = consts.DefaultWpmProvince
 	}
 
 	certLocality, err := c.GetenvString(consts.WpmCertLocalityEnv, "Locality")
 	if err == nil && certLocality != "" {
 		Configuration.Subject.Locality = certLocality
 	} else if Configuration.Subject.Locality == "" {
-			Configuration.Subject.Locality = consts.DefaultWpmLocality
+		Configuration.Subject.Locality = consts.DefaultWpmLocality
 	}
+
+	logLevel, err := c.GetenvString(consts.LogLevelEnvVar, "Logging Level")
+	if err != nil && logLevel == "" {
+		fmt.Fprintln(os.Stderr, "No logging level specified, using default logging level: Error")
+		Configuration.LogLevel = logrus.ErrorLevel
+	}
+	Configuration.LogLevel, err = logrus.ParseLevel(logLevel)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Invalid logging level specified, using default logging level: Error")
+		Configuration.LogLevel = logrus.ErrorLevel
+	}
+
 	return Save()
 }
 
 // LogConfiguration is used to setup log configurations
 func LogConfiguration() error {
+	log.Trace("config/config:LogConfiguration() Entering")
+	defer log.Trace("config/config:LogConfiguration() Leaving")
+
+	var ioWriterDefault io.Writer
+
 	// creating the log file if not preset
-	logFile, err := os.OpenFile(consts.LogFileName, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
+	secLogFile, err := os.OpenFile(consts.SecLogFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
 	if err != nil {
-		return errors.New("unable to write file. " + err.Error())
+		logrus.Fatal("Unable to open log file. " + err.Error())
 	}
-	log.SetFormatter(&log.TextFormatter{FullTimestamp: true, TimestampFormat: time.RFC1123Z})
-	logMultiWriter := io.MultiWriter(os.Stdout, logFile)
-	log.SetOutput(logMultiWriter)
+	defaultLogFile, err := os.OpenFile(consts.LogFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+	if err != nil {
+		logrus.Fatal("Unable to open log file. " + err.Error())
+	}
+
+	ioWriterDefault = defaultLogFile
+
+	ioWriterSecurity := io.MultiWriter(ioWriterDefault, secLogFile)
+
+	commLogInt.SetLogger(commLog.DefaultLoggerName, Configuration.LogLevel, nil, ioWriterDefault, false)
+	commLogInt.SetLogger(commLog.SecurityLoggerName, Configuration.LogLevel, nil, ioWriterSecurity, false)
+	secLog.Trace("config/config:LogConfiguration() Security log initiated")
+	log.Trace("config/config:LogConfiguration() Loggers setup finished")
 
 	return nil
 }

@@ -5,25 +5,30 @@
 package kmsclient
 
 import (
-	"encoding/hex"
-	"errors"
-	kms "intel/isecl/lib/kms-client"
+	"intel/isecl/lib/clients"
 	config "intel/isecl/wpm/config"
+	"intel/isecl/wpm/consts"
+
+	cLog "intel/isecl/lib/common/log"
 )
 
-func InitializeClient() (*kms.Client, error) {
-	var kc *kms.Client
-	var certificateDigest [48]byte
-	certDigestHex, err := hex.DecodeString(config.Configuration.Kms.TLSSha384)
-	if err != nil {
-		return kc, errors.New("error converting certificate digest to hex. " + err.Error())
-	}
-	copy(certificateDigest[:], certDigestHex)
-	kc = &kms.Client{
+var (
+	log    = cLog.GetDefaultLogger()
+	secLog = cLog.GetSecurityLogger()
+)
+
+func InitializeKMSClient() (*Client, error) {
+	log.Trace("pkg/kmsclient/initialize_client.go:InitializeKMSClient() Entering")
+	defer log.Trace("pkg/kmsclient/initialize_client.go:InitializeKMSClient() Leaving")
+
+	var kc *Client
+	hc, _ := clients.HTTPClientWithCADir(consts.TrustedCaCertsDir)
+	kc = &Client{
 		BaseURL:    config.Configuration.Kms.APIURL,
-		Username:   config.Configuration.Kms.APIUsername,
-		Password:   config.Configuration.Kms.APIPassword,
-		CertSha384: &certificateDigest,
+		HTTPClient: hc,
+		Username:   config.Configuration.Kms.Username,
+		Password:   config.Configuration.Kms.Password,
 	}
-	return kc, err
+
+	return kc, nil
 }

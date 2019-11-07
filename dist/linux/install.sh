@@ -63,8 +63,10 @@ WPM_BIN=${WPM_HOME}/bin
 WPM_SYMLINK=/usr/local/bin/wpm
 WPM_CONFIGURATION=/etc/${APPLICATION}
 WPM_CA_CONFIGURATION=/etc/${APPLICATION}/cacerts/
+WPM_CA_JWT_DIR=/etc/${APPLICATION}/jwt/
 WPM_LOGS=/var/log/${APPLICATION}
 INSTALL_LOG_FILE=$WPM_LOGS/install.log
+LOG_LEVEL=error
 
 
 # Deployment phase
@@ -91,13 +93,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo_info "Creating application directories and assigning permissions...."
+echo_info "Creating application directories and assigning permissions...."  | tee -a $INSTALL_LOG_FILE
 # 8. create application directories (chown will be repeated near end of this script, after setup)
-for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN $WPM_CA_CONFIGURATION; do
+for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN $WPM_CA_CONFIGURATION $WPM_CA_JWT_DIR; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
   mkdir -p $directory
   if [ $? -ne 0 ]; then
-    echo_failure "Cannot create directory: $directory"
+    echo_failure "Cannot create directory: $directory" | tee -a $INSTALL_LOG_FILE
     exit 1
   fi
   chmod 700 $directory
@@ -106,36 +108,36 @@ done
 # if an existing wpm is already running, stop it while we install
 existing_wpm=`which wpm 2>/dev/null`
 if [ -f "$existing_wpm" ]; then
- echo_success "Workload Policy Manager is already installed."
+ echo_success "Workload Policy Manager is already installed."  | tee -a $INSTALL_LOG_FILE
  exit 0
 fi
 
 cp -f $APPLICATION $WPM_BIN/wpm
 ln -sfT $WPM_BIN/wpm $WPM_SYMLINK
-echo_success "WPM installation complete"
+echo_success "WPM installation complete"  | tee -a $INSTALL_LOG_FILE
 
 # exit wpm setup if WPM_NOSETUP is set
 if [ -n "$WPM_NOSETUP" ]; then
-  echo "WPM_NOSETUP value is set. So, skipping the wpm setup task."
+  echo "WPM_NOSETUP value is set. So, skipping the wpm setup task." | tee -a $INSTALL_LOG_FILE
   exit 0;
 fi
 
 # 33. wpm setup
-wpm setup
+wpm setup | tee -a $INSTALL_LOG_FILE
 
 #Install secure docker daemon with wpm only if WPM_WITH_SECURE_DOCKER_DAEMON is enabled in wpm.env
 if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" == "Y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" == "yes" ]; then
   which docker 2>/dev/null
   if [ $? -ne 0 ]; then
-    echo "Docker is not installed"
+    echo "Docker is not installed" | tee -a $INSTALL_LOG_FILE
     exit 1
   fi
   which cryptsetup 2>/dev/null
   if [ $? -ne 0 ]; then
-    echo "Installing cryptsetup"
-    yum install -y cryptsetup
+    echo "Installing cryptsetup" | tee -a $INSTALL_LOG_FILE
+    yum install -y cryptsetup | tee -a $INSTALL_LOG_FILE
   fi 
-  echo "Installing secure docker daemon"
+  echo "Installing secure docker daemon" | tee -a $INSTALL_LOG_FILE
   systemctl stop docker
   mkdir -p $WPM_HOME/secure-docker-daemon/backup
   cp /usr/bin/docker $WPM_HOME/secure-docker-daemon/backup/
@@ -151,10 +153,10 @@ if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY"
   fi
   mkdir -p /etc/docker
   cp daemon.json /etc/docker/
-  echo "Restarting docker"
+  echo "Restarting docker" | tee -a $INSTALL_LOG_FILE
   systemctl daemon-reload
   systemctl start docker
   cp uninstall-secure-docker-daemon.sh $WPM_HOME/secure-docker-daemon/
 fi
 
-echo "Installation completed."
+echo "Installation completed." | tee -a $INSTALL_LOG_FILE

@@ -7,13 +7,15 @@ package main
 import (
 	"crypto/md5"
 	"crypto/x509/pkix"
-	"errors"
 	"flag"
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/lib/common/validation"
 	"intel/isecl/wpm/config"
 	"intel/isecl/wpm/consts"
+
+	"github.com/pkg/errors"
+
 	containerImageFlavor "intel/isecl/wpm/pkg/containerimageflavor"
 	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
 	"intel/isecl/wpm/pkg/setup"
@@ -25,14 +27,22 @@ import (
 	"strconv"
 	"strings"
 
+	commLog "intel/isecl/lib/common/log"
+
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+
+	"intel/isecl/lib/clients"
+	"intel/isecl/lib/clients/aas"
+
+	"intel/isecl/wpm/pkg/kmsclient"
 )
 
 var (
 	Version string = ""
 	Time    string = ""
 	Branch  string = ""
+	log            = commLog.GetDefaultLogger()
+	secLog         = commLog.GetSecurityLogger()
 )
 
 func printVersion() {
@@ -50,7 +60,7 @@ func main() {
 	// Save log configurations
 	err := config.LogConfiguration()
 	if err != nil {
-		log.Error("error in configuring logs.")
+		log.Error("main:main() Error in configuring logs.")
 	}
 
 	switch arg := strings.ToLower(args[0]); arg {
@@ -75,6 +85,8 @@ func main() {
 
 		// save configuration from config.yml
 		err = config.SaveConfiguration(context)
+		log.Debugf("main:main() Updated configuration %v", config.Configuration)
+
 		if err != nil {
 			fmt.Println("Error saving configuration. " + err.Error())
 			os.Exit(1)
@@ -86,8 +98,6 @@ func main() {
 			// Run list of setup tasks one by one
 			setupRunner := &csetup.Runner{
 				Tasks: []csetup.Task{
-					setup.CreateEnvelopeKey{},
-					setup.RegisterEnvelopeKey{},
 					csetup.Download_Ca_Cert{
 						Flags:         flags,
 						CmsBaseURL:    config.Configuration.Cms.BaseUrl,
@@ -101,26 +111,28 @@ func main() {
 						KeyAlgorithm:       consts.DefaultKeyAlgorithm,
 						KeyAlgorithmLength: consts.DefaultKeyAlgorithmLength,
 						CmsBaseURL:         config.Configuration.Cms.BaseUrl,
-						Subject:         	pkix.Name{
-							Country:            []string{config.Configuration.Subject.Country},
-							Organization:       []string{config.Configuration.Subject.Organization},
-							Locality:           []string{config.Configuration.Subject.Locality},
-							Province:           []string{config.Configuration.Subject.Province},
-							CommonName:         config.Configuration.Subject.CommonName,
+						Subject: pkix.Name{
+							Country:      []string{config.Configuration.Subject.Country},
+							Organization: []string{config.Configuration.Subject.Organization},
+							Locality:     []string{config.Configuration.Subject.Locality},
+							Province:     []string{config.Configuration.Subject.Province},
+							CommonName:   config.Configuration.Subject.CommonName,
 						},
-						SanList:            consts.DefaultWpmSan,
-						CertType:           "Signing",
-						CaCertsDir:         consts.TrustedCaCertsDir,
-						BearerToken:        "",
-						ConsoleWriter:      os.Stdout,
+						SanList:       consts.DefaultWpmSan,
+						CertType:      "Signing",
+						CaCertsDir:    consts.TrustedCaCertsDir,
+						BearerToken:   "",
+						ConsoleWriter: os.Stdout,
 					},
+					setup.CreateEnvelopeKey{},
+					setup.RegisterEnvelopeKey{},
 				},
 				AskInput: false,
 			}
 
 			err = setupRunner.RunTasks(args[1:]...)
 			if err != nil {
-				fmt.Println("Error running setup: ", err)
+				fmt.Fprintf(os.Stderr, "Error running setup: %+v", err)
 				os.Exit(1)
 			}
 		} else {
@@ -219,7 +231,7 @@ func main() {
 			protocol := make(map[string]byte)
 			protocol["https"] = 0
 			if validateURLErr := validation.ValidateURL(*notaryServerURL, protocol, notaryServerURIValue.RequestURI()); validateURLErr != nil {
-				fmt.Printf("Invalid key URL format: %s\n", validateURLErr.Error())
+				fmt.Fprintf(os.Stderr, "Invalid key URL format: %s\n", validateURLErr.Error())
 				containerFlavorUsage()
 				os.Exit(1)
 			}
@@ -228,7 +240,8 @@ func main() {
 		containerImageFlavor, err := containerImageFlavor.CreateContainerImageFlavor(*imageName, *tagName, *dockerFilePath, *buildDir,
 			*keyID, *encryptionRequired, *integrityEnforced, *notaryServerURL, *outputFlavorFilePath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+			log.Errorf("main:main() Error generating container image flavor: %+v", err)
+			fmt.Fprintf(os.Stderr, "Error generating container image flavor: %s\n", err.Error())
 			os.Exit(1)
 		}
 		if len(containerImageFlavor) > 0 {
@@ -243,13 +256,14 @@ func main() {
 		// validate input strings
 		inputArr := []string{*wrappedKeyFilePath}
 		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
-			fmt.Println("Invalid key file path string")
+			log.Errorf("main:main() Error unwrapping key: %+v", err)
+			fmt.Fprintf(os.Stderr, "Invalid key file path string: %s\n", err.Error())
 			os.Exit(1)
 		}
 
 		wrappedKey, err := ioutil.ReadFile(*wrappedKeyFilePath)
 		if err != nil {
-			fmt.Println("Cannot read from file: " + err.Error())
+			fmt.Fprintf(os.Stderr, "Cannot read from file: "+err.Error())
 			os.Exit(1)
 		}
 
@@ -262,7 +276,7 @@ func main() {
 
 	case "get-container-image-id":
 		if len(args[1:]) < 1 {
-			fmt.Println("Invalid number of parameters")
+			fmt.Fprintf(os.Stderr, "Invalid number of parameters")
 			os.Exit(1)
 		}
 		NameSpaceDNS := uuid.Must(uuid.Parse("6ba7b810-9dad-11d1-80b4-00c04fd430c8"))
@@ -276,7 +290,7 @@ func main() {
 		}
 		errorFiles, err := deleteFiles(consts.WpmSymLink, consts.OptDirPath, consts.ConfigDirPath, consts.LogDirPath)
 		if err != nil {
-			fmt.Printf("Error deleting files : %s", errorFiles)
+			fmt.Fprintf(os.Stderr, "Error deleting files : %s\n", errorFiles)
 		}
 
 	case "help", "-help", "--help":
@@ -287,6 +301,51 @@ func main() {
 
 	case "create-software-flavor":
 		fmt.Println("Not supported")
+
+	case "test-aas":
+		aasClient := aas.NewJWTClient(config.Configuration.Aas.APIURL)
+		fmt.Println(aasClient)
+
+		var err error
+		var wrappedKey []byte
+		var keyURLString string
+
+		aasClient.HTTPClient, err = clients.HTTPClientWithCADir(consts.TrustedCaCertsDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to initialize AAS client: %s\n", err.Error())
+		}
+
+		aasClient.AddUser(config.Configuration.Wpm.Username, config.Configuration.Wpm.Password)
+		err = aasClient.FetchAllTokens()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to fetch user token from AAS: %s\n", err.Error())
+		}
+
+		jwtToken, err := aasClient.GetUserToken(config.Configuration.Wpm.Username)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "User token not fetched from AAS: %s\n", err.Error())
+		}
+		fmt.Println(string(jwtToken))
+
+		var userInfo kmsclient.UserInfo
+		kc, err := kmsclient.InitializeKMSClient()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failure to initialize KMS client: %s\n", err.Error())
+		}
+
+		userInfo, err = kc.Keys().GetKmsUser()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error while getting the KMS user information: %s\n"+err.Error())
+		}
+
+		fmt.Printf("Retrieved user info: %s | %s", userInfo.UserID, userInfo.Username)
+
+		wrappedKey, keyURLString, err = util.FetchKey("")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching a key from KMS: %s\n"+err.Error())
+		}
+
+		fmt.Printf("Retrieved key: %s | %s", string(wrappedKey), keyURLString)
 
 	default:
 		fmt.Printf("Unrecognized option : %s\n", arg)
@@ -314,18 +373,20 @@ func usage() {
 	fmt.Printf("\t\t%s setup download_ca_cert [--force]\n", os.Args[0])
 	fmt.Printf("\t\t        - Download CMS root CA certificate\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads new root CA cert\n")
-	fmt.Printf("\t\t       - Environment variable CMS_BASE_URL=<url> for CMS API url\n")
+	fmt.Printf("\t\t       - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
 	fmt.Printf("\t\t%s setup download_cert Flavor-Signing [--force]\n", os.Args[0])
 	fmt.Printf("\t\t        - Generates Key pair and CSR, gets it signed from CMS\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads newly signed Flavor Signing cert\n")
-	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API url\n")
-	fmt.Printf("\t\t        - Environment variable BEARER_TOKEN=<token> for authenticating with CMS\n")	
-	fmt.Printf("\t\t        - Environment variable KEY_PATH=<key_path> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
+	fmt.Printf("\t\t        - Environment variable BEARER_TOKEN=<token> for downloading signed certificate from CMS\n")
+	//fmt.Printf("\t\t        - Environment variable KEY_PATH=<key_path> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable CERT_PATH=<cert_path> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_FLAVOR_SIGN_CERT_CN=<COMMON NAME> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_CERT_ORG=<CERTIFICATE ORGANIZATION> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_CERT_COUNTRY=<CERTIFICATE COUNTRY> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_CERT_LOCALITY=<CERTIFICATE LOCALITY> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable WPM_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config\n")
+	fmt.Printf("\t\t        - Environment variable WPM_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config\n")
 }
 
