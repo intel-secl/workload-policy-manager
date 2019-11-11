@@ -99,10 +99,11 @@ func main() {
 			setupRunner := &csetup.Runner{
 				Tasks: []csetup.Task{
 					csetup.Download_Ca_Cert{
-						Flags:         flags,
-						CmsBaseURL:    config.Configuration.Cms.BaseUrl,
-						CaCertDirPath: consts.TrustedCaCertsDir,
-						ConsoleWriter: os.Stdout,
+						Flags:                flags,
+						CmsBaseURL:           config.Configuration.Cms.BaseUrl,
+						CaCertDirPath:        consts.TrustedCaCertsDir,
+						TrustedTlsCertDigest: config.Configuration.CmsTlsCertDigest,
+						ConsoleWriter:        os.Stdout,
 					},
 					csetup.Download_Cert{
 						Flags:              flags,

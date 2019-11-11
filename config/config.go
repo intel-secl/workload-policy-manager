@@ -14,7 +14,7 @@ import (
 
 	commLog "intel/isecl/lib/common/log"
 	commLogInt "intel/isecl/lib/common/log/setup"
-
+	errorLog "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	yaml "gopkg.in/yaml.v2"
@@ -26,6 +26,7 @@ var (
 )
 
 var Configuration struct {
+	CmsTlsCertDigest string
 	Kms struct {
 		APIURL   string
 		Username string
@@ -91,53 +92,60 @@ func SaveConfiguration(c csetup.Context) error {
 
 	var err error
 
+	tlsCertDigest, err := c.GetenvString(consts.CmsTlsCertDigestEnv, "TLS certificate digest")
+	if err == nil &&  tlsCertDigest != "" {
+		Configuration.CmsTlsCertDigest = tlsCertDigest
+	} else if Configuration.CmsTlsCertDigest == "" {
+		return errorLog.Wrap(errors.New("CMS_TLS_CERT_SHA384 is not defined in environment"), "config/config:SaveConfiguration() ENV variable not found")
+	}
+
 	kmsApiUrl, err := c.GetenvString(consts.KMSAPIURLEnv, "KMS URL")
 	if err == nil && kmsApiUrl != "" {
 		Configuration.Kms.APIURL = kmsApiUrl
 	} else if Configuration.Kms.APIURL == "" {
-		return errors.New("KMS API URL is not defined in environment or config file")
+		return errorLog.Wrap(errors.New("KMS API URL is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
 	}
 
 	kmsUsername, err := c.GetenvString(consts.KMSUsernameEnv, "KMS Username")
 	if err == nil && kmsUsername != "" {
 		Configuration.Kms.Username = kmsUsername
 	} else if Configuration.Kms.Username == "" {
-		return errors.New("KMS Username is not defined in environment or config file")
+		return errorLog.Wrap(errors.New("KMS Username is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
 	}
 
 	kmsPassword, err := c.GetenvString(consts.KMSPasswordEnv, "KMS Password")
 	if err == nil && kmsPassword != "" {
 		Configuration.Kms.Password = kmsPassword
 	} else if Configuration.Kms.Password == "" {
-		return errors.New("KMS Password is not defined in environment or config file")
+		return errorLog.Wrap(errors.New("KMS Password is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
 	}
 
 	cmsBaseUrl, err := c.GetenvString(consts.CmsBaseUrlEnv, "CMS Base URL")
 	if err == nil && cmsBaseUrl != "" {
 		Configuration.Cms.BaseUrl = cmsBaseUrl
 	} else if Configuration.Cms.BaseUrl == "" {
-		return errors.New("CMS Base URL is not defined in environment or config file")
+		return errorLog.Wrap(errors.New("CMS Base URL is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
 	}
 
 	aasAPIURL, err := c.GetenvString(consts.AasAPIURLEnv, "AAS API URL")
 	if err == nil && aasAPIURL != "" {
 		Configuration.Aas.APIURL = aasAPIURL
 	} else if Configuration.Aas.APIURL == "" {
-		return errors.New("AAS API URL is not defined in environment or config file")
+		return errorLog.Wrap(errors.New("AAS API URL is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
 	}
 
 	wpmAASUsername, err := c.GetenvString(consts.ServiceUsername, "AAS API Username")
 	if err == nil && wpmAASUsername != "" {
 		Configuration.Wpm.Username = wpmAASUsername
 	} else if Configuration.Wpm.Username == "" {
-		return errors.New("WPM AAS Username is not defined in environment or config file")
+		return errorLog.Wrap(errors.New("WPM AAS Username is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
 	}
 
 	wpmAASPassword, err := c.GetenvString(consts.ServicePassword, "AAS API Password")
 	if err == nil && wpmAASPassword != "" {
 		Configuration.Wpm.Password = wpmAASPassword
 	} else if Configuration.Wpm.Password == "" {
-		return errors.New("WPM AAS Password is not defined in environment or config file")
+		return errorLog.Wrap(errors.New("WPM AAS Password is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
 	}
 
 	certCommonName, err := c.GetenvString(consts.WpmFlavorSignCertCommonNameEnv, "Common name")

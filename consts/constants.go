@@ -46,4 +46,5 @@ const (
 	ServiceName                    = "WPM"
 	ServiceUsername                = "WPM_USERNAME"
 	ServicePassword                = "WPM_PASSWORD"
+	CmsTlsCertDigestEnv            = "CMS_TLS_CERT_SHA384"
 )
