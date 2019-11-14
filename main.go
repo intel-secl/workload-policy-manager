@@ -30,11 +30,6 @@ import (
 	commLog "intel/isecl/lib/common/log"
 
 	"github.com/google/uuid"
-
-	"intel/isecl/lib/clients"
-	"intel/isecl/lib/clients/aas"
-
-	"intel/isecl/wpm/pkg/kmsclient"
 )
 
 var (
@@ -57,14 +52,14 @@ func main() {
 		return
 	}
 
-	// Save log configurations
-	err := config.LogConfiguration()
-	if err != nil {
-		log.Error("main:main() Error in configuring logs.")
-	}
-
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
+		// Set log configurations
+		err := config.LogConfiguration(true, true)
+		if err != nil {
+			log.WithError(err).Error("main:main() Error in configuring logs.")
+		}
+
 		flags := args
 
 		if len(args) >= 2 &&
@@ -142,6 +137,12 @@ func main() {
 		}
 
 	case "create-image-flavor":
+		// Set log configurations
+		err := config.LogConfiguration(false, true)
+		if err != nil {
+			log.WithError(err).Error("main:main() Error in configuring logs.")
+		}
+
 		flavorLabel := flag.String("l", "", "flavor label")
 		flag.StringVar(flavorLabel, "label", "", "flavor label")
 		inputImageFilePath := flag.String("i", "", "input image file path")
@@ -189,6 +190,12 @@ func main() {
 		}
 
 	case "create-container-image-flavor":
+		// Set log configurations
+		err := config.LogConfiguration(false, true)
+		if err != nil {
+			log.WithError(err).Error("main:main() Error in configuring logs.")
+		}
+
 		imageName := flag.String("i", "", "docker image name")
 		flag.StringVar(imageName, "img-name", "", "docker image name")
 		tagName := flag.String("t", "latest", "docker image tag")
@@ -250,6 +257,11 @@ func main() {
 		}
 
 	case "unwrap-key":
+		err := config.LogConfiguration(false, true)
+		if err != nil {
+			log.WithError(err).Error("main:main() Error in configuring logs.")
+		}
+
 		wrappedKeyFilePath := flag.String("i", "", "wrapped key file path")
 		flag.StringVar(wrappedKeyFilePath, "in", "", "wrapped key file path")
 		flag.CommandLine.Parse(os.Args[2:])
@@ -276,6 +288,11 @@ func main() {
 		fmt.Println(unwrappedKey)
 
 	case "get-container-image-id":
+		err := config.LogConfiguration(false, true)
+		if err != nil {
+			log.WithError(err).Error("main:main() Error in configuring logs.")
+		}
+
 		if len(args[1:]) < 1 {
 			fmt.Fprintf(os.Stderr, "Invalid number of parameters")
 			os.Exit(1)
@@ -285,6 +302,11 @@ func main() {
 		fmt.Println(imageUUID)
 
 	case "uninstall":
+		err := config.LogConfiguration(true, true)
+		if err != nil {
+			log.WithError(err).Error("main:main() Error in configuring logs.")
+		}
+
 		fmt.Println("Uninstalling WPM")
 		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
 			deleteFiles(consts.ConfigDirPath)
@@ -302,51 +324,6 @@ func main() {
 
 	case "create-software-flavor":
 		fmt.Println("Not supported")
-
-	case "test-aas":
-		aasClient := aas.NewJWTClient(config.Configuration.Aas.APIURL)
-		fmt.Println(aasClient)
-
-		var err error
-		var wrappedKey []byte
-		var keyURLString string
-
-		aasClient.HTTPClient, err = clients.HTTPClientWithCADir(consts.TrustedCaCertsDir)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to initialize AAS client: %s\n", err.Error())
-		}
-
-		aasClient.AddUser(config.Configuration.Wpm.Username, config.Configuration.Wpm.Password)
-		err = aasClient.FetchAllTokens()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to fetch user token from AAS: %s\n", err.Error())
-		}
-
-		jwtToken, err := aasClient.GetUserToken(config.Configuration.Wpm.Username)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "User token not fetched from AAS: %s\n", err.Error())
-		}
-		fmt.Println(string(jwtToken))
-
-		var userInfo kmsclient.UserInfo
-		kc, err := kmsclient.InitializeKMSClient()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failure to initialize KMS client: %s\n", err.Error())
-		}
-
-		userInfo, err = kc.Keys().GetKmsUser()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error while getting the KMS user information: %s\n"+err.Error())
-		}
-
-		fmt.Printf("Retrieved user info: %s | %s", userInfo.UserID, userInfo.Username)
-
-		wrappedKey, keyURLString, err = util.FetchKey("")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching a key from KMS: %s\n"+err.Error())
-		}
-
-		fmt.Printf("Retrieved key: %s | %s", string(wrappedKey), keyURLString)
 
 	default:
 		fmt.Printf("Unrecognized option : %s\n", arg)

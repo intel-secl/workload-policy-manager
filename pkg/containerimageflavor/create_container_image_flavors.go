@@ -11,6 +11,7 @@ package containerimageflavor
  */
 import (
 	"encoding/json"
+	"fmt"
 	cLog "intel/isecl/lib/common/log"
 	"intel/isecl/lib/flavor"
 	flavorUtil "intel/isecl/lib/flavor/util"
@@ -21,6 +22,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 )
@@ -45,19 +48,21 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 	var err error
 	var wrappedKey []byte
 	var keyURLString string
-	flavorStr := ""
+	signedFlavor := ""
 
 	// set logger fields
-	log = log.WithField("imageName", imageName)
-	log = log.WithField("encryptionRequired", encryptionRequired)
-	log = log.WithField("integrityEnforced", integrityEnforced)
-	log = log.WithField("dockerFilePath", dockerFilePath)
-	log = log.WithField("outputFlavorFilePath", outputFlavorFilePath)
-	log = log.WithField("keyID", keyID)
+	log = log.WithFields(logrus.Fields{
+		"imageName":            imageName,
+		"encryptionRequired":   encryptionRequired,
+		"integrityEnforced":    integrityEnforced,
+		"dockerFilePath":       dockerFilePath,
+		"outputFlavorFilePath": outputFlavorFilePath,
+		"keyID":                keyID,
+	})
 
 	//Return usage if input params are provided incorrectly
 	if len(strings.TrimSpace(imageName)) <= 0 {
-		return flavorStr, errors.New("pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Missing image name")
+		return signedFlavor, errors.New("pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Missing image name")
 	}
 	flavorLabel := imageName + ":" + tag
 	if len(strings.TrimSpace(dockerFilePath)) > 0 || len(strings.TrimSpace(buildDir)) > 0 {
@@ -65,20 +70,20 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 		//Error if Dockerfile specified doesn't exist
 		_, err = os.Stat(dockerFilePath)
 		if os.IsNotExist(err) {
-			return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Dockerfile does not exist")
+			return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Dockerfile does not exist")
 		}
 
 		//Error if build directory specified doesn't exist
 		_, err = os.Stat(buildDir)
 		if os.IsNotExist(err) {
-			return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Docker build directory does not exist")
+			return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Docker build directory does not exist")
 		}
 
 		//Encrypt the image with the key
 		if encryptionRequired {
 			wrappedKey, keyURLString, err = util.FetchKey(keyID)
 			if err != nil {
-				return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error fetching KMS key")
+				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error fetching KMS key")
 			}
 			// We infer the keyID from the keyURLString
 			if keyID == "" {
@@ -88,10 +93,10 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 			wrappedKeyFileName := "wrappedKey_" + keyID + "_"
 			wrappedKeyFile, err := ioutil.TempFile("/tmp", wrappedKeyFileName)
 			if err != nil {
-				return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to create wrapped key file")
+				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to create wrapped key file")
 			}
 			if _, err = wrappedKeyFile.Write(wrappedKey); err != nil {
-				return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to write wrapped key to file")
+				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to write wrapped key to file")
 			}
 			defer os.Remove(wrappedKeyFile.Name())
 
@@ -100,9 +105,13 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 				"--imgcrypt-opt", "RequiresConfidentiality=true", "--imgcrypt-opt", "KeyFilePath="+wrappedKeyFile.Name(),
 				"--imgcrypt-opt", "KeyType=key-type-kms", "-f", dockerFilePath, buildDir)
 
+			log.Debugf("pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Docker build command %s",
+				fmt.Sprintf("docker build --no-cache -t %s:%s --imgcrypt-opt RequiresConfidentiality=true --imgcrypt-opt KeyFilePath=%s "+
+					"--imgcrypt-opt KeyType=key-type-kms -f %s %s",
+					imageName, tag, wrappedKeyFile.Name(), dockerFilePath, buildDir))
 			_, err = cmd.CombinedOutput()
 			if err != nil {
-				return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to build container image with encryption")
+				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to build container image with encryption")
 			}
 
 		} else {
@@ -110,48 +119,48 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 			_, err = exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tag,
 				"-f", dockerFilePath, buildDir).CombinedOutput()
 			if err != nil {
-				return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to build container image")
+				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to build container image")
 			}
 		}
 	} else {
 		_, err = exec.Command("docker", "inspect", "--type=image", imageName+":"+tag).CombinedOutput()
 		if err != nil {
-			return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to find image with name: "+imageName+" and tag: "+tag+"\nImage should be present locally")
+			return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to find image with name: "+imageName+" and tag: "+tag+"\nImage should be present locally")
 		}
 	}
 
 	if integrityEnforced && notaryServerURL == "" {
 		//add public notary server url
 		notaryServerURL = DEFAULT_NOTARY_SERVER_URL
-		log = log.WithField("notaryServerURL", notaryServerURL)
+		log.Infof("Using default notary server URL: %s", notaryServerURL)
 	}
 
 	//Create image flavor
 	containerImageFlavor, err := flavor.GetContainerImageFlavor(flavorLabel, encryptionRequired, keyURLString, integrityEnforced, notaryServerURL)
 	if err != nil {
-		return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error while creating image flavor")
+		return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error while creating image flavor")
 	}
 
 	//Marshall the image flavor to a JSON string
 	containerImageFlavorJSON, err := json.Marshal(containerImageFlavor)
 	if err != nil {
-		return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error while marshalling image flavor")
+		return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error while marshalling image flavor")
 	}
 
-	flavorStr, err = flavorUtil.GetSignedFlavor(string(containerImageFlavorJSON), consts.FlavorSigningKeyPath)
+	signedFlavor, err = flavorUtil.GetSignedFlavor(string(containerImageFlavorJSON), consts.FlavorSigningKeyPath)
 	if err != nil {
-		return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error while signing image flavor: ")
+		return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error while signing image flavor: ")
 	}
 
 	//If no output flavor file path was specified, return the marshalled image flavor
 	if len(strings.TrimSpace(outputFlavorFilePath)) <= 0 {
-		return flavorStr, nil
+		return signedFlavor, nil
 	}
 
 	//Otherwise, write it to the specified file
-	err = ioutil.WriteFile(outputFlavorFilePath, []byte(flavorStr), 0600)
+	err = ioutil.WriteFile(outputFlavorFilePath, []byte(signedFlavor), 0600)
 	if err != nil {
-		return flavorStr, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error writing image flavor to output file")
+		return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error writing image flavor to output file")
 	}
-	return flavorStr, nil
+	return signedFlavor, nil
 }

@@ -198,7 +198,7 @@ func SaveConfiguration(c csetup.Context) error {
 }
 
 // LogConfiguration is used to setup log configurations
-func LogConfiguration() error {
+func LogConfiguration(stdOut, logFile bool) error {
 	log.Trace("config/config:LogConfiguration() Entering")
 	defer log.Trace("config/config:LogConfiguration() Leaving")
 
@@ -215,6 +215,10 @@ func LogConfiguration() error {
 	}
 
 	ioWriterDefault = defaultLogFile
+
+	if stdOut && logFile {
+		ioWriterDefault = io.MultiWriter(os.Stdout, defaultLogFile)
+	}
 
 	ioWriterSecurity := io.MultiWriter(ioWriterDefault, secLogFile)
 

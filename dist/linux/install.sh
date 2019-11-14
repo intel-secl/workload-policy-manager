@@ -66,7 +66,7 @@ WPM_CA_CONFIGURATION=/etc/${APPLICATION}/cacerts/
 WPM_CA_JWT_DIR=/etc/${APPLICATION}/jwt/
 WPM_LOGS=/var/log/${APPLICATION}
 INSTALL_LOG_FILE=$WPM_LOGS/install.log
-LOG_LEVEL=error
+WPM_LOG_LEVEL=info
 
 
 # Deployment phase

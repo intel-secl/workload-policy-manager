@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -50,18 +51,19 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 	}
 
 	// set logger fields
-	log = log.WithField("flavorLabel", flavorLabel)
-	log = log.WithField("encryptionrequired", encRequired)
-	log = log.WithField("integrityrequired", integrityRequired)
-	log = log.WithField("inputImageFilePath", inputImageFilePath)
-	log = log.WithField("outputFlavorFilePath", outputFlavorFilePath)
-	log = log.WithField("outputEncImageFilePath", outputEncImageFilePath)
+	log = log.WithFields(logrus.Fields{
+		"flavorLabel":            flavorLabel,
+		"encryptionRequired":     encRequired,
+		"integrityrequired":      integrityRequired,
+		"inputImageFilePath":     inputImageFilePath,
+		"outputFlavorFilePath":   outputFlavorFilePath,
+		"outputEncImageFilePath": keyID,
+	})
 
 	//Error if image specified doesn't exist
 	_, err = os.Stat(inputImageFilePath)
 	if os.IsNotExist(err) {
-		log.WithError(err).Errorf("pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() I/O error reading image file")
-		return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Image file does not exist: "+err.Error())
+		return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() I/O error reading image file: "+err.Error())
 	}
 
 	//Encrypt the image with the key
@@ -71,8 +73,7 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 		// encrypt the image with key retrieved from KBS
 		err = util.Encrypt(inputImageFilePath, consts.EnvelopePrivatekeyLocation, outputEncImageFilePath, wrappedKey)
 		if err != nil {
-			log.WithError(err).Errorf("pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Image encryption failed")
-			return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Error encrypting image: "+err.Error())
+			return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Image encryption failed: "+err.Error())
 		}
 		imageFilePath = outputEncImageFilePath
 	}
@@ -80,8 +81,7 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 	//Check the encrypted image output file
 	imageFile, err := ioutil.ReadFile(imageFilePath)
 	if err != nil {
-		log.WithError(err).Errorf("pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() I/O Error creating encrypted image file")
-		return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() I/O Error while reading the image file: "+err.Error())
+		return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() I/O Error creating encrypted image file: "+err.Error())
 	}
 
 	//Take the digest of the encrypted image
@@ -90,20 +90,17 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 	//Create image flavor
 	imageFlavor, err := flavor.GetImageFlavor(flavorLabel, encRequired, keyURLString, base64.StdEncoding.EncodeToString(digest[:]))
 	if err != nil {
-		log.WithError(err).Errorf("pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Error creating flavor for encrypted image")
 		return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Error creating image flavor: "+err.Error())
 	}
 
 	//Marshall the image flavor to a JSON string
 	imageFlavorJSON, err := json.Marshal(imageFlavor)
 	if err != nil {
-		log.WithError(err).Errorf("pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Error mashalling flavor JSON for image")
 		return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Error while marshalling image flavor:"+err.Error())
 	}
 
 	signedFlavor, err := flavorUtil.GetSignedFlavor(string(imageFlavorJSON), consts.FlavorSigningKeyPath)
 	if err != nil {
-		log.WithError(err).Errorf("pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Error signing flavor for image")
 		return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Error signing flavor for image:"+err.Error())
 	}
 
@@ -111,14 +108,12 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 
 	//If no output flavor file path was specified, return the marshalled image flavor
 	if len(strings.TrimSpace(outputFlavorFilePath)) <= 0 {
-		log.Debugf("pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() Successfully created image flavor %s", signedFlavor)
 		return signedFlavor, nil
 	}
 
 	//Otherwise, write it to the specified file
 	err = ioutil.WriteFile(outputFlavorFilePath, []byte(signedFlavor), 0600)
 	if err != nil {
-		log.WithError(err).Errorf("pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() I/O Error writing image flavor to output file")
 		return "", errors.Wrap(err, "pkg/imageflavor/create_image_flavors.go:CreateImageFlavor() I/O Error writing image flavor to output file")
 	}
 

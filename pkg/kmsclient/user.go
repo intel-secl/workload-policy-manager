@@ -47,26 +47,22 @@ func (k *Keys) GetKmsUser() (UserInfo, error) {
 	}
 	getUserURL, err := url.Parse(fmt.Sprintf("users?usernameEqualTo=%s", k.client.Username))
 	if err != nil {
-		log.Errorf("pkg/kmsclient/user.go:GetKmsUser Error parsing URL %s | %v", getUserURL.String(), err)
-		return userInfo, errors.New("pkg/kmsclient/user.go:GetKmsUser Error parsing KMS URL")
+		return userInfo, errors.Wrapf(err, "pkg/kmsclient/user.go:GetKmsUser Error parsing URL %s", getUserURL.String())
 	}
 	reqURL := baseURL.ResolveReference(getUserURL)
 	req, err := http.NewRequest("GET", reqURL.String(), nil)
 	if err != nil {
-		log.Errorf("pkg/kmsclient/user.go:GetKmsUser Error creating request for URL %s | %v", reqURL.String(), err)
-		return userInfo, errors.New("pkg/kmsclient/user.go:GetKmsUser Error creating user transfer request")
+		return userInfo, errors.Wrapf(err, "pkg/kmsclient/user.go:GetKmsUser Error creating user transfer request for URL %s", reqURL.String())
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 	rsp, err := httpclient.SendRequest(req)
 	if err != nil {
-		log.Errorf("pkg/kmsclient/user.go:GetKmsUser Error response for GetUser  %s | %v", reqURL.String(), err)
-		return userInfo, errors.New("pkg/kmsclient/user.go:GetKmsUser Error dispatching request")
+		return userInfo, errors.Wrapf(err, "pkg/kmsclient/user.go:GetKmsUser Error response for GetUser URL %s", reqURL.String())
 	}
 	err = json.Unmarshal(rsp, &users)
 	if err != nil {
-		log.Errorf("pkg/kmsclient/user.go:GetKmsUser Error unmarshal GetUser response  %s | %v", string(rsp), err)
-		return userInfo, errors.Wrap(err, "pkg/kmsclient/user.go:GetKmsUser Error unmarshalling GetUser response")
+		return userInfo, errors.Wrapf(err, "pkg/kmsclient/user.go:GetKmsUser Error unmarshal GetUser response")
 	}
 	log.Infof("pkg/kmsclient/user.go:GetKmsUser Successfully retrieved KMS user %v", users)
 	return users.Users[0], nil
@@ -82,21 +78,19 @@ func (k *Keys) RegisterUserPubKey(publicKey []byte, userID string) error {
 	}
 	keyXferURL, err := url.Parse(fmt.Sprintf("users/%s/transfer-key", userID))
 	if err != nil {
-		log.Infof("pkg/kmsclient/user.go:RegisterUserPubKey Failed to parse key transfer URL %s | %v", keyXferURL.String(), err)
-		return errors.Wrap(err, "Failed to parse Key Transfer URL")
+		return errors.Wrapf(err, "pkg/kmsclient/user.go:RegisterUserPubKey Failed to parse user envelope key register URL %s", keyXferURL.String())
 	}
 	reqURL := baseURL.ResolveReference(keyXferURL)
+	log.Debugf("pkg/kmsclient/user.go:RegisterUserPubKey Envelope key register URL %s", reqURL.String())
 	req, err := http.NewRequest("PUT", reqURL.String(), bytes.NewBuffer(publicKey))
 	if err != nil {
-		log.Infof("pkg/kmsclient/user.go:RegisterUserPubKey Failed to parse URL %s | %v", reqURL.String(), err)
-		return errors.Wrap(err, "Failed to register user public key")
+		return errors.Wrap(err, "pkg/kmsclient/user.go:RegisterUserPubKey Failed to create envelope key register request")
 	}
 	req.Header.Set("Content-Type", "application/x-pem-file")
 	_, err = httpclient.SendRequest(req)
 	if err != nil {
-		log.Infof("pkg/kmsclient/user.go:RegisterUserPubKey Failed to parse URL %s | %v", reqURL.String(), err)
-		return errors.Wrap(err, "Error sending request")
+		return errors.Wrap(err, "pkg/kmsclient/user.go:RegisterUserPubKey Register Envelope Key failure response")
 	}
-
+	log.Info("pkg/kmsclient/user.go:GetKmsUser Successfully registered envelope key for KMS user")
 	return nil
 }

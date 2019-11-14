@@ -17,7 +17,7 @@ const (
 	WpmCertCountryEnv              = "WPM_CERT_COUNTRY"
 	WpmCertLocalityEnv             = "WPM_CERT_LOCALITY"
 	WpmCertProvinceEnv             = "WPM_CERT_PROVINCE"
-	LogLevelEnvVar                 = "LOG_LEVEL"
+	LogLevelEnvVar                 = "WPM_LOG_LEVEL"
 	OptDirPath                     = "/opt/workload-policy-manager/"
 	ConfigDirPath                  = "/etc/workload-policy-manager/"
 	ConfigFilePath                 = ConfigDirPath + "config.yml"
