@@ -64,7 +64,6 @@ func main() {
 
 		if len(args) >= 2 &&
 			args[1] != "CreateEnvelopeKey" &&
-			args[1] != "RegisterEnvelopeKey" &&
 			args[1] != "download_ca_cert" &&
 			args[1] != "download_cert" {
 			usage()
@@ -121,7 +120,6 @@ func main() {
 						ConsoleWriter: os.Stdout,
 					},
 					setup.CreateEnvelopeKey{},
-					setup.RegisterEnvelopeKey{},
 				},
 				AskInput: false,
 			}

@@ -9,6 +9,7 @@ import (
 	config "intel/isecl/wpm/config"
 	"intel/isecl/wpm/consts"
 	kmsc "intel/isecl/wpm/pkg/kmsclient"
+	"io/ioutil"
 	"net/url"
 	"strings"
 
@@ -52,8 +53,12 @@ func FetchKey(keyID string) ([]byte, string, error) {
 	keyURLString = keyURL.String()
 	log.Debugf("pkg/util/fetch_key.go:FetchKey() keyURL: %s", keyURLString)
 
+	pubKey, err := ioutil.ReadFile(consts.EnvelopePublickeyLocation)
+	if err != nil {
+		return []byte(""), "", errors.Wrap(err, "pkg/util/fetch_key.go:FetchKey() Error reading envelop public key")
+	}
 	//Retrieve key using key ID
-	keyValue, err = kc.Key(keyID).Retrieve()
+	keyValue, err = kc.Key(keyID).Retrieve(string(pubKey))
 	if err != nil {
 		return []byte(""), "", errors.Wrap(err, "pkg/util/fetch_key.go:FetchKey() Error retrieving the image encryption key")
 	}

@@ -8,11 +8,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"intel/isecl/wpm/config"
 	"intel/isecl/wpm/pkg/httpclient"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	logger "github.com/sirupsen/logrus"
 
@@ -125,7 +125,7 @@ func (k *Keys) Create(key KeyInfo) (*KeyInfo, error) {
 }
 
 // Retrieve performs a POST to /key/{id}/transfer to retrieve the actual key data from the KMS
-func (k *KeyID) Retrieve() ([]byte, error) {
+func (k *KeyID) Retrieve(pubKey string) ([]byte, error) {
 	logger.Trace("pkg/kmsclient/key.go:Retrieve() Entering")
 	defer logger.Trace("pkg/kmsclient/key.go:Retrieve() Leaving")
 
@@ -140,19 +140,17 @@ func (k *KeyID) Retrieve() ([]byte, error) {
 	}
 	reqURL := baseURL.ResolveReference(keyXferURL)
 
-	req, err := http.NewRequest("POST", reqURL.String(), nil)
+	req, err := http.NewRequest("POST", reqURL.String(), strings.NewReader(pubKey))
 	if err != nil {
 		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:Retrieve() Error creating key retrieval request")
 	}
 
 	// Set request headers
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "text/plain")
 
-	// set BasicAuth for key transfer
-	req.SetBasicAuth(config.Configuration.Kms.Username, config.Configuration.Kms.Password)
 
-	rsp, err := httpclient.SendBasicAuthRequest(req)
+	rsp, err := httpclient.SendRequest(req)
 	log.Debugf("pkg/kmsclient/key.go:Retrieve() HTTP response %s", string(rsp))
 	if err != nil {
 		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:Retrieve() Error response from key retrieve request")
