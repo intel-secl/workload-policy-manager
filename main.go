@@ -215,6 +215,12 @@ func main() {
 		flag.Usage = func() { containerFlavorUsage() }
 		flag.CommandLine.Parse(os.Args[2:])
 
+		if len(strings.TrimSpace(*imageName)) <= 0  {
+			fmt.Println("Flavor label and image file path should be given.")
+			containerFlavorUsage()
+			os.Exit(1)
+		}
+
 		// validate input strings
 		inputArr := []string{*imageName, *tagName, *dockerFilePath, *buildDir, *outputFlavorFilePath}
 		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
@@ -338,14 +344,24 @@ func usage() {
 	fmt.Printf("Workload Policy Manager\n")
 	fmt.Printf("usage : %s <command> [<args>]\n\n", os.Args[0])
 	fmt.Printf("Following are the list of commands\n")
-	fmt.Printf("\tcreate-image-flavor|create-container-image-flavor|get-container-image-id|create-software-flavor|uninstall|--help|--version\n\n")
-	fmt.Printf("\tusage : %s setup [<tasklist>]\n", os.Args[0])
+	fmt.Printf("\tcreate-image-flavor|create-container-image-flavor|get-container-image-id|create-software-flavor|unwrap-key|uninstall|--help|--version\n\n")
+	fmt.Printf("\tcreate-image-flavor - Used to create image flavors and encrypt the image\n")
+	fmt.Printf("\t")
+	imageFlavorUsage()
+	fmt.Printf("\tcreate-container-image-flavor - Used to create container image flavors and encrypt the container image\n")
+	fmt.Printf("\t")
+	containerFlavorUsage()
+	fmt.Printf("\n\t%s get-container-image-id [<sha256 of image id>] - Used to get the container image ID given the sha256 of the image\n", os.Args[0])
+	fmt.Printf("\n\t%s unwrap-key [-i in]\n", os.Args[0])
+	fmt.Printf("\t\t          -i, --in        wrapped key file path\n")
+	fmt.Printf("\n\tuninstall          Uninstall wpm\n")
+	fmt.Printf("\n\tuninstall --purge  Uninstalls wpm and deletes the existing configuration directory\n")
+	fmt.Printf("\n\tusage : %s setup [<tasklist>]\n", os.Args[0])
 	fmt.Printf("\t\t<tasklist>-space separated list of tasks\n")
-	fmt.Printf("\t\t\t-Supported tasks - CreateEnvelopeKey and RegisterEnvelopeKey\n")
+	fmt.Printf("\t\t\t-Supported tasks - CreateEnvelopeKey\n")
 	fmt.Printf("\tExample :-\n")
 	fmt.Printf("\t\t%s setup\n", os.Args[0])
 	fmt.Printf("\t\t%s setup CreateEnvelopeKey\n", os.Args[0])
-	fmt.Printf("\t\t%s setup RegisterEnvelopeKey\n", os.Args[0])
 	fmt.Printf("\t\t%s setup download_ca_cert [--force]\n", os.Args[0])
 	fmt.Printf("\t\t        - Download CMS root CA certificate\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads new root CA cert\n")
