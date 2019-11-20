@@ -46,7 +46,11 @@ func Encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation 
 		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error while unwrapping the key")
 	}
 	// creating a new cipher block of 128 bits
-	block, _ := aes.NewCipher(key)
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error initializing cipher")
+	}
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error creating a cipher block")

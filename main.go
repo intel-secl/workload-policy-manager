@@ -33,11 +33,14 @@ import (
 )
 
 var (
+	// Version holds the version number for the WPM binary
 	Version string = ""
-	Time    string = ""
-	Branch  string = ""
-	log            = commLog.GetDefaultLogger()
-	secLog         = commLog.GetSecurityLogger()
+	// Time holds the build timestamp for the WPM binary
+	Time string = ""
+	// Branch holds the git build branch for the WPM binary
+	Branch string = ""
+	log           = commLog.GetDefaultLogger()
+	secLog        = commLog.GetSecurityLogger()
 )
 
 func printVersion() {
@@ -46,6 +49,8 @@ func printVersion() {
 
 func main() {
 	var context csetup.Context
+	var err error
+
 	args := os.Args[1:]
 	if len(args) <= 0 {
 		usage()
@@ -54,10 +59,32 @@ func main() {
 
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
-		// Set log configurations
-		err := config.LogConfiguration(true, true)
+		// Everytime, we run setup, need to make sure that the configuration is complete
+		// So lets run the Configurer as a seperate runner. We could have made a single runner
+		// with the first task as the Configurer. However, the logic in the common setup task
+		// runner runs only the tasks passed in the argument if there are 1 or more tasks.
+		// This means that with current logic, if there are no specific tasks passed in the
+		// argument, we will only run the confugurer but the intention was to run all of them
+
+		// TODO : The right way to address this is to pass the arguments from the commandline
+		// to a functon in the workload agent setup package and have it build a slice of tasks
+		// to run.
+		installRunner := &csetup.Runner{
+			Tasks: []csetup.Task{
+				setup.Configurer{},
+			},
+			AskInput: false,
+		}
+		err = installRunner.RunTasks("Configurer")
 		if err != nil {
-			log.WithError(err).Error("main:main() Error in configuring logs.")
+			fmt.Fprintln(os.Stderr, "Error loading configuration.")
+			os.Exit(1)
+		}
+
+		// Set log configurations
+		err = config.LogConfiguration(false, true)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 		}
 
 		flags := args
@@ -79,10 +106,11 @@ func main() {
 
 		// save configuration from config.yml
 		err = config.SaveConfiguration(context)
-		log.Debugf("main:main() Updated configuration %v", config.Configuration)
+		fmt.Println("Updated configuration")
 
 		if err != nil {
-			fmt.Println("Error saving configuration. " + err.Error())
+			fmt.Fprintln(os.Stderr, "Error updating configuration.")
+			log.WithError(err).Errorf("main:main() Error updating configuration: %+v\n", err)
 			os.Exit(1)
 		}
 
@@ -94,9 +122,9 @@ func main() {
 				Tasks: []csetup.Task{
 					csetup.Download_Ca_Cert{
 						Flags:                flags,
-						CmsBaseURL:           config.Configuration.Cms.BaseUrl,
+						CmsBaseURL:           config.Configuration.Cms.BaseURL,
 						CaCertDirPath:        consts.TrustedCaCertsDir,
-						TrustedTlsCertDigest: config.Configuration.CmsTlsCertDigest,
+						TrustedTlsCertDigest: config.Configuration.CmsTLSCertDigest,
 						ConsoleWriter:        os.Stdout,
 					},
 					csetup.Download_Cert{
@@ -105,7 +133,7 @@ func main() {
 						CertFile:           consts.FlavorSigningCertPath,
 						KeyAlgorithm:       consts.DefaultKeyAlgorithm,
 						KeyAlgorithmLength: consts.DefaultKeyAlgorithmLength,
-						CmsBaseURL:         config.Configuration.Cms.BaseUrl,
+						CmsBaseURL:         config.Configuration.Cms.BaseURL,
 						Subject: pkix.Name{
 							Country:      []string{config.Configuration.Subject.Country},
 							Organization: []string{config.Configuration.Subject.Organization},
@@ -126,11 +154,13 @@ func main() {
 
 			err = setupRunner.RunTasks(args[1:]...)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error running setup: %+v", err)
+				fmt.Fprintln(os.Stderr, "Error running setup tasks. Check logs for more information.")
+				log.WithError(err).Errorf("main:main() Error running setup tasks: %+v\n", err)
 				os.Exit(1)
 			}
 		} else {
 			fmt.Println("WPM_NOSETUP is set, skipping setup")
+			log.Info("main:main() WPM_NOSETUP is set. Skipping setup")
 			os.Exit(1)
 		}
 
@@ -138,7 +168,7 @@ func main() {
 		// Set log configurations
 		err := config.LogConfiguration(false, true)
 		if err != nil {
-			log.WithError(err).Error("main:main() Error in configuring logs.")
+			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 		}
 
 		flavorLabel := flag.String("l", "", "flavor label")
@@ -155,7 +185,7 @@ func main() {
 		flag.CommandLine.Parse(os.Args[2:])
 
 		if len(strings.TrimSpace(*flavorLabel)) <= 0 || len(strings.TrimSpace(*inputImageFilePath)) <= 0 {
-			fmt.Println("Flavor label and image file path should be given.")
+			fmt.Fprintln(os.Stderr, "Error creating VM image flavor: Missing arguments Flavor label and image file path.")
 			imageFlavorUsage()
 			os.Exit(1)
 		}
@@ -163,7 +193,8 @@ func main() {
 		// validate input strings
 		inputArr := []string{*flavorLabel, *outputFlavorFilePath, *inputImageFilePath, *outputEncImageFilePath}
 		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
-			fmt.Println("Invalid string format")
+			fmt.Fprintln(os.Stderr, "Error creating VM image flavor: Invalid string format")
+			log.WithError(err).Errorf("main:main() Error creating VM image flavor: %+v\n", err)
 			imageFlavorUsage()
 			os.Exit(1)
 		}
@@ -171,7 +202,8 @@ func main() {
 		//If the key ID is specified, make sure it's a valid UUID
 		if len(strings.TrimSpace(*keyID)) > 0 {
 			if validatekeyIDErr := validation.ValidateUUIDv4(*keyID); validatekeyIDErr != nil {
-				fmt.Println("Invalid Key UUID format")
+				fmt.Fprintln(os.Stderr, "Error creating VM image flavor: Invalid Key UUID format")
+				log.WithError(validatekeyIDErr).Errorf("main:main() Error creating VM image flavor: %+v\n", validatekeyIDErr)
 				imageFlavorUsage()
 				os.Exit(1)
 			}
@@ -180,10 +212,12 @@ func main() {
 		imageFlavor, err := imageFlavor.CreateImageFlavor(*flavorLabel, *outputFlavorFilePath, *inputImageFilePath,
 			*outputEncImageFilePath, *keyID, false)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+			fmt.Fprintln(os.Stderr, "Error creating VM image flavor. Check logs for more information.")
+			log.WithError(err).Errorf("main:main() Error creating VM image flavor: %+v\n", err)
 			os.Exit(1)
 		}
 		if len(imageFlavor) > 0 {
+			log.Info("main:main() Successfully created VM image flavor")
 			fmt.Println(imageFlavor)
 		}
 
@@ -191,7 +225,7 @@ func main() {
 		// Set log configurations
 		err := config.LogConfiguration(false, true)
 		if err != nil {
-			log.WithError(err).Error("main:main() Error in configuring logs.")
+			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 		}
 
 		imageName := flag.String("i", "", "docker image name")
@@ -215,7 +249,7 @@ func main() {
 		flag.Usage = func() { containerFlavorUsage() }
 		flag.CommandLine.Parse(os.Args[2:])
 
-		if len(strings.TrimSpace(*imageName)) <= 0  {
+		if len(strings.TrimSpace(*imageName)) <= 0 {
 			fmt.Println("Flavor label and image file path should be given.")
 			containerFlavorUsage()
 			os.Exit(1)
@@ -224,7 +258,8 @@ func main() {
 		// validate input strings
 		inputArr := []string{*imageName, *tagName, *dockerFilePath, *buildDir, *outputFlavorFilePath}
 		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
-			fmt.Println("Invalid string format")
+			fmt.Fprintln(os.Stderr, "Error Creating Container Flavor: Invalid Input String Format")
+			log.WithError(validationErr).Errorf("main:main() Error Creating Container Flavor: %+v\n", validationErr)
 			containerFlavorUsage()
 			os.Exit(1)
 		}
@@ -232,7 +267,8 @@ func main() {
 		//If the key ID is specified, make sure it's a valid UUID
 		if len(strings.TrimSpace(*keyID)) > 0 {
 			if validatekeyIDErr := validation.ValidateUUIDv4(*keyID); validatekeyIDErr != nil {
-				fmt.Println("Invalid Key UUID format")
+				fmt.Fprintln(os.Stderr, "Error Creating Container Flavor: Invalid UUID")
+				log.WithError(validatekeyIDErr).Errorf("main:main() Error Creating Container Flavor: %+v\n", validatekeyIDErr)
 				containerFlavorUsage()
 				os.Exit(1)
 			}
@@ -243,7 +279,8 @@ func main() {
 			protocol := make(map[string]byte)
 			protocol["https"] = 0
 			if validateURLErr := validation.ValidateURL(*notaryServerURL, protocol, notaryServerURIValue.RequestURI()); validateURLErr != nil {
-				fmt.Fprintf(os.Stderr, "Invalid key URL format: %s\n", validateURLErr.Error())
+				fmt.Fprintln(os.Stderr, "Error Creating Container Flavor: Invalid key URL format")
+				log.WithError(validateURLErr).Errorf("Error Creating Container Flavor: %+v\n", validateURLErr)
 				containerFlavorUsage()
 				os.Exit(1)
 			}
@@ -252,18 +289,20 @@ func main() {
 		containerImageFlavor, err := containerImageFlavor.CreateContainerImageFlavor(*imageName, *tagName, *dockerFilePath, *buildDir,
 			*keyID, *encryptionRequired, *integrityEnforced, *notaryServerURL, *outputFlavorFilePath)
 		if err != nil {
-			log.Errorf("main:main() Error generating container image flavor: %+v", err)
-			fmt.Fprintf(os.Stderr, "Error generating container image flavor: %s\n", err.Error())
+			fmt.Fprintln(os.Stderr, "Error Creating Container Flavor! Check logs for more information.")
+			log.WithError(err).Errorf("main:main() Error Creating Container Flavor: %+v", err)
 			os.Exit(1)
 		}
+
 		if len(containerImageFlavor) > 0 {
+			log.Info("main:main() Successfully created container image flavor")
 			fmt.Println(containerImageFlavor)
 		}
 
 	case "unwrap-key":
 		err := config.LogConfiguration(false, true)
 		if err != nil {
-			log.WithError(err).Error("main:main() Error in configuring logs.")
+			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 		}
 
 		wrappedKeyFilePath := flag.String("i", "", "wrapped key file path")
@@ -273,28 +312,32 @@ func main() {
 		// validate input strings
 		inputArr := []string{*wrappedKeyFilePath}
 		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
-			log.Errorf("main:main() Error unwrapping key: %+v", err)
-			fmt.Fprintf(os.Stderr, "Invalid key file path string: %s\n", err.Error())
+			fmt.Fprintf(os.Stderr, "Error unwrapping key: Invalid key file path %s\n", *wrappedKeyFilePath)
+			log.WithError(err).Errorf("main:main() Error unwrapping key: %+v\n", err)
 			os.Exit(1)
 		}
 
 		wrappedKey, err := ioutil.ReadFile(*wrappedKeyFilePath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Cannot read from file: "+err.Error())
+			fmt.Fprintf(os.Stderr, "Error unwrapping key: Unable to read from wrapped key file: %s\n", *wrappedKeyFilePath)
+			log.WithError(err).Errorf("main:main() Error unwrapping key: Unable to read from wrapped key file: %+v\n", err)
 			os.Exit(1)
 		}
 
 		unwrappedKey, err := util.UnwrapKey(wrappedKey, consts.EnvelopePrivatekeyLocation)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Fprintf(os.Stderr, "Error unwrapping key %s - check logs\n", *wrappedKeyFilePath)
+			log.WithError(err).Errorf("main:main() Error unwrapping key: %+v\n" + err.Error())
 			os.Exit(1)
 		}
+		log.Info("main:main() Successfully unwrapped key")
 		fmt.Println(unwrappedKey)
 
 	case "get-container-image-id":
 		err := config.LogConfiguration(false, true)
 		if err != nil {
-			log.WithError(err).Error("main:main() Error in configuring logs.")
+			fmt.Fprintln(os.Stderr, "Error configuring logging.")
+
 		}
 
 		if len(args[1:]) < 1 {
@@ -303,14 +346,10 @@ func main() {
 		}
 		NameSpaceDNS := uuid.Must(uuid.Parse("6ba7b810-9dad-11d1-80b4-00c04fd430c8"))
 		imageUUID := uuid.NewHash(md5.New(), NameSpaceDNS, []byte(args[1]), 4)
+		log.Info("main:main() Successfully retrieved container image ID")
 		fmt.Println(imageUUID)
 
 	case "uninstall":
-		err := config.LogConfiguration(true, true)
-		if err != nil {
-			log.WithError(err).Error("main:main() Error in configuring logs.")
-		}
-
 		fmt.Println("Uninstalling WPM")
 		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
 			deleteFiles(consts.ConfigDirPath)
@@ -371,7 +410,6 @@ func usage() {
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads newly signed Flavor Signing cert\n")
 	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
 	fmt.Printf("\t\t        - Environment variable BEARER_TOKEN=<token> for downloading signed certificate from CMS\n")
-	//fmt.Printf("\t\t        - Environment variable KEY_PATH=<key_path> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable CERT_PATH=<cert_path> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_FLAVOR_SIGN_CERT_CN=<COMMON NAME> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_CERT_ORG=<CERTIFICATE ORGANIZATION> to override default specified in config\n")

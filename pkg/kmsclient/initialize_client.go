@@ -26,8 +26,6 @@ func InitializeKMSClient() (*Client, error) {
 	kc = &Client{
 		BaseURL:    config.Configuration.Kms.APIURL,
 		HTTPClient: hc,
-		Username:   config.Configuration.Kms.Username,
-		Password:   config.Configuration.Kms.Password,
 	}
 
 	return kc, nil

@@ -5,16 +5,17 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/wpm/consts"
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
+
 	commLog "intel/isecl/lib/common/log"
 	commLogInt "intel/isecl/lib/common/log/setup"
-	errorLog "github.com/pkg/errors"
+
 	"github.com/sirupsen/logrus"
 
 	yaml "gopkg.in/yaml.v2"
@@ -25,15 +26,14 @@ var (
 	secLog = commLog.GetSecurityLogger()
 )
 
+// Configuration holds the configuration required for WPM operations
 var Configuration struct {
-	CmsTlsCertDigest string
-	Kms struct {
-		APIURL   string
-		Username string
-		Password string
+	CmsTLSCertDigest string
+	Kms              struct {
+		APIURL string
 	}
 	Cms struct {
-		BaseUrl string
+		BaseURL string
 	}
 	Subject struct {
 		CommonName   string
@@ -49,7 +49,8 @@ var Configuration struct {
 		Username string
 		Password string
 	}
-	LogLevel logrus.Level
+	LogLevel       string
+	ConfigComplete bool
 }
 
 var LogWriter io.Writer
@@ -92,63 +93,101 @@ func SaveConfiguration(c csetup.Context) error {
 
 	var err error
 
-	tlsCertDigest, err := c.GetenvString(consts.CmsTlsCertDigestEnv, "TLS certificate digest")
-	if err == nil &&  tlsCertDigest != "" {
-		Configuration.CmsTlsCertDigest = tlsCertDigest
-	} else if Configuration.CmsTlsCertDigest == "" {
-		return errorLog.Wrap(errors.New("CMS_TLS_CERT_SHA384 is not defined in environment"), "config/config:SaveConfiguration() ENV variable not found")
+	//clear the ConfigComplete flag and save the file. We will mark it complete on at the end.
+	// we can use the ConfigComplete field to check if the configuration is complete before
+	// running the other tasks.
+	Configuration.ConfigComplete = false
+	err = Save()
+	if err != nil {
+		return errors.Wrap(err, "config/config:SaveConfiguration() unable to save configuration file")
 	}
 
-	kmsApiUrl, err := c.GetenvString(consts.KMSAPIURLEnv, "KMS URL")
-	if err == nil && kmsApiUrl != "" {
-		Configuration.Kms.APIURL = kmsApiUrl
-	} else if Configuration.Kms.APIURL == "" {
-		return errorLog.Wrap(errors.New("KMS API URL is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
+	// we are going to check and set the required configuration variables
+	// however, we do not want to error out after each one. We want to provide
+	// entries in the log file indicating which ones are missing. At the
+	// end of this section we will error out. Will use a flag to keep track
+
+	requiredConfigsPresent := true
+
+	requiredConfigs := [...]csetup.EnvVars{
+		{
+			Name:        consts.CmsTlsCertDigestEnv,
+			ConfigVar:   &Configuration.CmsTLSCertDigest,
+			Description: "CMS TLS certificate SHA384 digest",
+			EmptyOkay:   false,
+		},
+		{
+			Name:        consts.CmsBaseUrlEnv,
+			ConfigVar:   &Configuration.Cms.BaseURL,
+			Description: "CMS Base URL",
+			EmptyOkay:   false,
+		},
+		{
+			Name:        consts.KMSAPIURLEnv,
+			ConfigVar:   &Configuration.Kms.APIURL,
+			Description: "KMS URL",
+			EmptyOkay:   false,
+		},
+		{
+			Name:        consts.AasAPIURLEnv,
+			ConfigVar:   &Configuration.Aas.APIURL,
+			Description: "AAS API URL",
+			EmptyOkay:   false,
+		},
+		{
+			Name:        consts.ServiceUsername,
+			ConfigVar:   &Configuration.Wpm.Username,
+			Description: "WPM AAS Username",
+			EmptyOkay:   false,
+		},
+		{
+			Name:        consts.ServicePassword,
+			ConfigVar:   &Configuration.Wpm.Password,
+			Description: "WPM AAS Password",
+			EmptyOkay:   false,
+		},
+		{
+			Name:        consts.WpmFlavorSignCertCommonNameEnv,
+			ConfigVar:   &Configuration.Subject.CommonName,
+			Description: "WPM Signing Certificate Common Name",
+			EmptyOkay:   true,
+		},
+		{
+			Name:        consts.WpmCertOrganizationEnv,
+			ConfigVar:   &Configuration.Subject.Organization,
+			Description: "WPM Signing Certificate Organization",
+			EmptyOkay:   true,
+		},
+		{
+			Name:        consts.WpmCertCountryEnv,
+			ConfigVar:   &Configuration.Subject.Country,
+			Description: "WPM Signing Certificate Country",
+			EmptyOkay:   true,
+		},
+		{
+			Name:        consts.WpmCertLocalityEnv,
+			ConfigVar:   &Configuration.Subject.Locality,
+			Description: "WPM Signing Certificate Locality",
+			EmptyOkay:   true,
+		},
+		{
+			Name:        consts.LogLevelEnvVar,
+			ConfigVar:   &Configuration.LogLevel,
+			Description: "WPM Logging Level",
+			EmptyOkay:   true,
+		},
 	}
 
-	kmsUsername, err := c.GetenvString(consts.KMSUsernameEnv, "KMS Username")
-	if err == nil && kmsUsername != "" {
-		Configuration.Kms.Username = kmsUsername
-	} else if Configuration.Kms.Username == "" {
-		return errorLog.Wrap(errors.New("KMS Username is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
+	for _, cv := range requiredConfigs {
+		_, _, err = c.OverrideValueFromEnvVar(cv.Name, cv.ConfigVar, cv.Description, cv.EmptyOkay)
+		if err != nil {
+			requiredConfigsPresent = false
+			fmt.Fprintf(os.Stderr, "Environment variable %s required - but not set\n", cv.Name)
+			fmt.Fprintln(os.Stderr, err)
+		}
 	}
 
-	kmsPassword, err := c.GetenvString(consts.KMSPasswordEnv, "KMS Password")
-	if err == nil && kmsPassword != "" {
-		Configuration.Kms.Password = kmsPassword
-	} else if Configuration.Kms.Password == "" {
-		return errorLog.Wrap(errors.New("KMS Password is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
-	}
-
-	cmsBaseUrl, err := c.GetenvString(consts.CmsBaseUrlEnv, "CMS Base URL")
-	if err == nil && cmsBaseUrl != "" {
-		Configuration.Cms.BaseUrl = cmsBaseUrl
-	} else if Configuration.Cms.BaseUrl == "" {
-		return errorLog.Wrap(errors.New("CMS Base URL is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
-	}
-
-	aasAPIURL, err := c.GetenvString(consts.AasAPIURLEnv, "AAS API URL")
-	if err == nil && aasAPIURL != "" {
-		Configuration.Aas.APIURL = aasAPIURL
-	} else if Configuration.Aas.APIURL == "" {
-		return errorLog.Wrap(errors.New("AAS API URL is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
-	}
-
-	wpmAASUsername, err := c.GetenvString(consts.ServiceUsername, "AAS API Username")
-	if err == nil && wpmAASUsername != "" {
-		Configuration.Wpm.Username = wpmAASUsername
-	} else if Configuration.Wpm.Username == "" {
-		return errorLog.Wrap(errors.New("WPM AAS Username is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
-	}
-
-	wpmAASPassword, err := c.GetenvString(consts.ServicePassword, "AAS API Password")
-	if err == nil && wpmAASPassword != "" {
-		Configuration.Wpm.Password = wpmAASPassword
-	} else if Configuration.Wpm.Password == "" {
-		return errorLog.Wrap(errors.New("WPM AAS Password is not defined in environment or config file"), "config/config:SaveConfiguration() ENV variable not found")
-	}
-
-	certCommonName, err := c.GetenvString(consts.WpmFlavorSignCertCommonNameEnv, "Common name")
+	certCommonName, err := c.GetenvString(consts.WpmFlavorSignCertCommonNameEnv, "Common Name")
 	if err == nil && certCommonName != "" {
 		Configuration.Subject.CommonName = certCommonName
 	} else if Configuration.Subject.CommonName == "" {
@@ -183,18 +222,33 @@ func SaveConfiguration(c csetup.Context) error {
 		Configuration.Subject.Locality = consts.DefaultWpmLocality
 	}
 
+	// check if the logging level is provided in env
 	logLevel, err := c.GetenvString(consts.LogLevelEnvVar, "Logging Level")
 	if err != nil && logLevel == "" {
-		fmt.Fprintln(os.Stderr, "No logging level specified, using default logging level: Error")
-		Configuration.LogLevel = logrus.ErrorLevel
-	}
-	Configuration.LogLevel, err = logrus.ParseLevel(logLevel)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Invalid logging level specified, using default logging level: Error")
-		Configuration.LogLevel = logrus.ErrorLevel
+		fmt.Fprintln(os.Stderr, "No logging level specified, using default logging level: Info")
+		Configuration.LogLevel = logrus.InfoLevel.String()
+	} else {
+		// check if the provided log level is valid
+		_, err = logrus.ParseLevel(logLevel)
+		if err != nil {
+			// fall back to the default logging level
+			fmt.Fprintln(os.Stderr, "Invalid logging level specified, using default logging level: Info")
+			Configuration.LogLevel = logrus.InfoLevel.String()
+		} else {
+			if Configuration.LogLevel == "" {
+				// update the logging level
+				ll, _ := logrus.ParseLevel(logLevel)
+				Configuration.LogLevel = ll.String()
+			}
+		}
 	}
 
-	return Save()
+	if requiredConfigsPresent {
+		Configuration.ConfigComplete = true
+		return Save()
+	}
+
+	return errors.New("config/config one or more required environment variables for setup not present. log file has details")
 }
 
 // LogConfiguration is used to setup log configurations
@@ -222,8 +276,10 @@ func LogConfiguration(stdOut, logFile bool) error {
 
 	ioWriterSecurity := io.MultiWriter(ioWriterDefault, secLogFile)
 
-	commLogInt.SetLogger(commLog.DefaultLoggerName, Configuration.LogLevel, nil, ioWriterDefault, false)
-	commLogInt.SetLogger(commLog.SecurityLoggerName, Configuration.LogLevel, nil, ioWriterSecurity, false)
+	ll, _ := logrus.ParseLevel(Configuration.LogLevel)
+
+	commLogInt.SetLogger(commLog.DefaultLoggerName, ll, nil, ioWriterDefault, false)
+	commLogInt.SetLogger(commLog.SecurityLoggerName, ll, nil, ioWriterSecurity, false)
 	secLog.Trace("config/config:LogConfiguration() Security log initiated")
 	log.Trace("config/config:LogConfiguration() Loggers setup finished")
 

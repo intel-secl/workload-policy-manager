@@ -51,7 +51,7 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 	log.Trace("pkg/setup/create_envelope_key.go:Run() Entering")
 	defer log.Trace("pkg/setup/create_envelope_key.go:Run() Leaving")
 
-	log.Info("Creating envelope key")
+	log.Info("pkg/setup/create_envelope_key.go:Run() Creating envelope key")
 
 	bitSize := consts.DefaultKeyAlgorithmLength
 	keyPair, err := rsa.GenerateKey(rand.Reader, bitSize)

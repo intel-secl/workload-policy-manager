@@ -149,7 +149,6 @@ func (k *KeyID) Retrieve(pubKey string) ([]byte, error) {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "text/plain")
 
-
 	rsp, err := httpclient.SendRequest(req)
 	log.Debugf("pkg/kmsclient/key.go:Retrieve() HTTP response %s", string(rsp))
 	if err != nil {
@@ -159,6 +158,6 @@ func (k *KeyID) Retrieve(pubKey string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:Retrieve() Error unmarshaling key retrieve response")
 	}
-	log.Debugf("pkg/kmsclient/key.go:Retrieve() After unmarshalling Key %v", keyValue)
+	log.Info("pkg/kmsclient/key.go:Retrieve() Successfully retrieved key")
 	return keyValue.Key, nil
 }
