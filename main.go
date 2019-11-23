@@ -7,6 +7,7 @@ package main
 import (
 	"crypto/md5"
 	"crypto/x509/pkix"
+	base64 "encoding/base64"
 	"flag"
 	"fmt"
 	csetup "intel/isecl/lib/common/setup"
@@ -331,7 +332,7 @@ func main() {
 			os.Exit(1)
 		}
 		log.Info("main:main() Successfully unwrapped key")
-		fmt.Println(unwrappedKey)
+		fmt.Println(base64.StdEncoding.EncodeToString(unwrappedKey))
 
 	case "get-container-image-id":
 		err := config.LogConfiguration(false, true)
