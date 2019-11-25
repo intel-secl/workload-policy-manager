@@ -93,7 +93,7 @@ func main() {
 			args[1] != "CreateEnvelopeKey" &&
 			args[1] != "download_ca_cert" &&
 			args[1] != "download_cert" {
-			usage()
+			fmt.Printf("Unrecognized command: %s %s\n", args[0], args[1])
 			os.Exit(1)
 		}
 
@@ -369,8 +369,7 @@ func main() {
 		fmt.Println("Not supported")
 
 	default:
-		fmt.Printf("Unrecognized option : %s\n", arg)
-		usage()
+		fmt.Printf("Unrecognized command: %s\n", arg)
 	}
 }
 
