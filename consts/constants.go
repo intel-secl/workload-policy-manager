@@ -6,8 +6,6 @@ package consts
 
 const (
 	KMSAPIURLEnv                   = "KMS_API_URL"
-	KMSUsernameEnv                 = "KMS_USERNAME"
-	KMSPasswordEnv                 = "KMS_PASSWORD"
 	KmsEncryptAlgo                 = "AES"
 	KmsKeyLength                   = 256
 	KmsCipherMode                  = "GCM"
@@ -44,7 +42,7 @@ const (
 	BearerTokenEnv                 = "BEARER_TOKEN"
 	KMSKeyRetrievalGroupName       = "KeyCRUD"
 	ServiceName                    = "WPM"
-	ServiceUsername                = "WPM_USERNAME"
-	ServicePassword                = "WPM_PASSWORD"
+	ServiceUsername                = "WPM_SERVICE_USERNAME"
+	ServicePassword                = "WPM_SERVICE_PASSWORD"
 	CmsTlsCertDigestEnv            = "CMS_TLS_CERT_SHA384"
 )

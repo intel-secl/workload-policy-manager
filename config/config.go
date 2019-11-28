@@ -137,13 +137,13 @@ func SaveConfiguration(c csetup.Context) error {
 		{
 			Name:        consts.ServiceUsername,
 			ConfigVar:   &Configuration.Wpm.Username,
-			Description: "WPM AAS Username",
+			Description: "WPM Service Username",
 			EmptyOkay:   false,
 		},
 		{
 			Name:        consts.ServicePassword,
 			ConfigVar:   &Configuration.Wpm.Password,
-			Description: "WPM AAS Password",
+			Description: "WPM Service Password",
 			EmptyOkay:   false,
 		},
 		{
