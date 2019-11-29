@@ -9,10 +9,12 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	cLog "intel/isecl/lib/common/log"
 	csetup "intel/isecl/lib/common/setup"
 	"intel/isecl/wpm/consts"
+
 	"os"
 
 	"github.com/pkg/errors"
@@ -24,6 +26,7 @@ var (
 )
 
 type CreateEnvelopeKey struct {
+	Flags []string
 }
 
 // ValidateCreateKey method is used to check if the envelope keys exists on disk
@@ -51,57 +54,68 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 	log.Trace("pkg/setup/create_envelope_key.go:Run() Entering")
 	defer log.Trace("pkg/setup/create_envelope_key.go:Run() Leaving")
 
-	log.Info("pkg/setup/create_envelope_key.go:Run() Creating envelope key")
+	fs := flag.NewFlagSet("ca", flag.ContinueOnError)
+	force := fs.Bool("force", false, "force recreation, will overwrite any existing Envelope Keys")
 
-	bitSize := consts.DefaultKeyAlgorithmLength
-	keyPair, err := rsa.GenerateKey(rand.Reader, bitSize)
+	err := fs.Parse(ek.Flags)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while generating new RSA key pair")
-		return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while generating a new RSA key pair")
+		fmt.Println("CA certificate setup: Unable to parse flags")
+		return fmt.Errorf("CA certificate setup: Unable to parse flags")
 	}
 
-	// save private key
-	privateKey := &pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(keyPair),
-	}
+	if *force || ek.Validate(c) != nil {
+		log.Info("pkg/setup/create_envelope_key.go:Run() Creating envelope key")
 
-	privateKeyFile, err := os.Create(consts.EnvelopePrivatekeyLocation)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "I/O error while saving private key file")
-		return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() I/O error while saving private key file")
-	}
-	defer privateKeyFile.Close()
-	err = pem.Encode(privateKeyFile, privateKey)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "I/O error while encoding private key file")
-		return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while encoding the private key.")
-	}
+		bitSize := consts.DefaultKeyAlgorithmLength
+		keyPair, err := rsa.GenerateKey(rand.Reader, bitSize)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error while generating new RSA key pair")
+			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while generating a new RSA key pair")
+		}
 
-	// save public key
-	publicKey := &keyPair.PublicKey
+		// save private key
+		privateKey := &pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(keyPair),
+		}
 
-	pubkeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "I/O error while encoding private key file")
-		return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while marshalling the public key.")
-	}
-	var publicKeyInPem = &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubkeyBytes,
-	}
+		privateKeyFile, err := os.Create(consts.EnvelopePrivatekeyLocation)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "I/O error while saving private key file")
+			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() I/O error while saving private key file")
+		}
+		defer privateKeyFile.Close()
+		err = pem.Encode(privateKeyFile, privateKey)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "I/O error while encoding private key file")
+			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while encoding the private key.")
+		}
 
-	publicKeyFile, err := os.Create(consts.EnvelopePublickeyLocation)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "I/O error while encoding public envelope key file")
-		return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while creating a new file. ")
-	}
-	defer publicKeyFile.Close()
+		// save public key
+		publicKey := &keyPair.PublicKey
 
-	err = pem.Encode(publicKeyFile, publicKeyInPem)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while encoding the public envelope key")
-		return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while encoding the public key.")
+		pubkeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "I/O error while encoding private key file")
+			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while marshalling the public key.")
+		}
+		var publicKeyInPem = &pem.Block{
+			Type:  "PUBLIC KEY",
+			Bytes: pubkeyBytes,
+		}
+
+		publicKeyFile, err := os.Create(consts.EnvelopePublickeyLocation)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "I/O error while encoding public envelope key file")
+			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while creating a new file. ")
+		}
+		defer publicKeyFile.Close()
+
+		err = pem.Encode(publicKeyFile, publicKeyInPem)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error while encoding the public envelope key")
+			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while encoding the public key.")
+		}
 	}
 	return nil
 }

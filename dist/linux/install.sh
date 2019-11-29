@@ -117,16 +117,16 @@ ln -sfT $WPM_BIN/wpm $WPM_SYMLINK
 echo_success "WPM installation complete"  | tee -a $INSTALL_LOG_FILE
 
 # exit wpm setup if WPM_NOSETUP is set
-if [ -n "$WPM_NOSETUP" ]; then
-  echo "WPM_NOSETUP value is set. So, skipping the wpm setup task." | tee -a $INSTALL_LOG_FILE
+if [ "$WPM_NOSETUP" = "true" ]; then
+  echo "WPM_NOSETUP value is set to true. So, skipping the wpm setup task." | tee -a $INSTALL_LOG_FILE
   exit 0;
 fi
 
 # 33. wpm setup
-wpm setup | tee -a $INSTALL_LOG_FILE
+wpm setup all | tee -a $INSTALL_LOG_FILE
 
 #Install secure docker daemon with wpm only if WPM_WITH_SECURE_DOCKER_DAEMON is enabled in wpm.env
-if [ "$WPM_WITH_CONTAINER_SECURITY" == "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" == "Y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" == "yes" ]; then
+if [ "$WPM_WITH_CONTAINER_SECURITY" = "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" = "Y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" = "yes" ]; then
   which docker 2>/dev/null
   if [ $? -ne 0 ]; then
     echo "Docker is not installed" | tee -a $INSTALL_LOG_FILE

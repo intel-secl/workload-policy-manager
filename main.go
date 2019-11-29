@@ -49,6 +49,9 @@ func printVersion() {
 }
 
 func main() {
+	log.Trace("main:main() Entering")
+	defer log.Trace("main:main() Leaving")
+
 	var context csetup.Context
 	var err error
 
@@ -60,6 +63,19 @@ func main() {
 
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
+		// Set log configurations
+		err = config.LogConfiguration(false, true)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error configuring logging.")
+		}
+
+		// Check if nosetup environment variable is true, if yes then skip the setup tasks
+		if nosetup, err := strconv.ParseBool(os.Getenv("WPM_NOSETUP")); err == nil && nosetup == true {
+			fmt.Println("WPM_NOSETUP is set to true. Skipping setup tasks.")
+			log.Info("main:main() WPM_NOSETUP is set to true. Skipping setup.")
+			os.Exit(1)
+		}
+
 		// Everytime, we run setup, need to make sure that the configuration is complete
 		// So lets run the Configurer as a seperate runner. We could have made a single runner
 		// with the first task as the Configurer. However, the logic in the common setup task
@@ -70,6 +86,30 @@ func main() {
 		// TODO : The right way to address this is to pass the arguments from the commandline
 		// to a functon in the workload agent setup package and have it build a slice of tasks
 		// to run.
+		flags := args
+
+		// if setup is provided without task name then print usage and quit
+		if len(args) == 1 {
+			usage()
+			os.Exit(0)
+		}
+
+		if len(args) >= 2 &&
+			args[1] != "CreateEnvelopeKey" &&
+			args[1] != "download_ca_cert" &&
+			args[1] != "download_cert" &&
+			args[1] != "all" {
+			fmt.Printf("Unrecognized command: %s %s\n", args[0], args[1])
+			os.Exit(1)
+		}
+
+		if len(args) > 1 {
+			flags = args[2:]
+			if args[1] == "download_cert" && len(args) > 2 {
+				flags = args[3:]
+			}
+		}
+
 		installRunner := &csetup.Runner{
 			Tasks: []csetup.Task{
 				setup.Configurer{},
@@ -82,86 +122,63 @@ func main() {
 			os.Exit(1)
 		}
 
-		// Set log configurations
-		err = config.LogConfiguration(false, true)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error configuring logging.")
-		}
-
-		flags := args
-
-		if len(args) >= 2 &&
-			args[1] != "CreateEnvelopeKey" &&
-			args[1] != "download_ca_cert" &&
-			args[1] != "download_cert" {
-			fmt.Printf("Unrecognized command: %s %s\n", args[0], args[1])
-			os.Exit(1)
-		}
-
-		if len(args) > 1 {
-			flags = args[2:]
-			if args[1] == "download_cert" && len(args) > 2 {
-				flags = args[3:]
-			}
-		}
-
 		// save configuration from config.yml
 		err = config.SaveConfiguration(context)
-		fmt.Println("Updated configuration")
 
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error updating configuration.")
+			fmt.Fprintln(os.Stderr, "Error updating configuration. Refer logs for more information.")
 			log.WithError(err).Errorf("main:main() Error updating configuration: %+v\n", err)
 			os.Exit(1)
 		}
 
-		// Check if nosetup environment variable is true, if yes then skip the setup tasks
-		if nosetup, err := strconv.ParseBool(os.Getenv("WPM_NOSETUP")); err != nil && nosetup == false {
-
-			// Run list of setup tasks one by one
-			setupRunner := &csetup.Runner{
-				Tasks: []csetup.Task{
-					csetup.Download_Ca_Cert{
-						Flags:                flags,
-						CmsBaseURL:           config.Configuration.Cms.BaseURL,
-						CaCertDirPath:        consts.TrustedCaCertsDir,
-						TrustedTlsCertDigest: config.Configuration.CmsTLSCertDigest,
-						ConsoleWriter:        os.Stdout,
-					},
-					csetup.Download_Cert{
-						Flags:              flags,
-						KeyFile:            consts.FlavorSigningKeyPath,
-						CertFile:           consts.FlavorSigningCertPath,
-						KeyAlgorithm:       consts.DefaultKeyAlgorithm,
-						KeyAlgorithmLength: consts.DefaultKeyAlgorithmLength,
-						CmsBaseURL:         config.Configuration.Cms.BaseURL,
-						Subject: pkix.Name{
-							Country:      []string{config.Configuration.Subject.Country},
-							Organization: []string{config.Configuration.Subject.Organization},
-							Locality:     []string{config.Configuration.Subject.Locality},
-							Province:     []string{config.Configuration.Subject.Province},
-							CommonName:   config.Configuration.Subject.CommonName,
-						},
-						SanList:       consts.DefaultWpmSan,
-						CertType:      "Signing",
-						CaCertsDir:    consts.TrustedCaCertsDir,
-						BearerToken:   "",
-						ConsoleWriter: os.Stdout,
-					},
-					setup.CreateEnvelopeKey{},
+		// Run list of setup tasks one by one
+		setupRunner := &csetup.Runner{
+			Tasks: []csetup.Task{
+				csetup.Download_Ca_Cert{
+					Flags:                flags,
+					CmsBaseURL:           config.Configuration.Cms.BaseURL,
+					CaCertDirPath:        consts.TrustedCaCertsDir,
+					TrustedTlsCertDigest: config.Configuration.CmsTLSCertDigest,
+					ConsoleWriter:        os.Stdout,
 				},
-				AskInput: false,
-			}
+				csetup.Download_Cert{
+					Flags:              flags,
+					KeyFile:            consts.FlavorSigningKeyPath,
+					CertFile:           consts.FlavorSigningCertPath,
+					KeyAlgorithm:       consts.DefaultKeyAlgorithm,
+					KeyAlgorithmLength: consts.DefaultKeyAlgorithmLength,
+					CmsBaseURL:         config.Configuration.Cms.BaseURL,
+					Subject: pkix.Name{
+						Country:      []string{config.Configuration.Subject.Country},
+						Organization: []string{config.Configuration.Subject.Organization},
+						Locality:     []string{config.Configuration.Subject.Locality},
+						Province:     []string{config.Configuration.Subject.Province},
+						CommonName:   config.Configuration.Subject.CommonName,
+					},
+					SanList:       consts.DefaultWpmSan,
+					CertType:      "Signing",
+					CaCertsDir:    consts.TrustedCaCertsDir,
+					BearerToken:   "",
+					ConsoleWriter: os.Stdout,
+				},
+				setup.CreateEnvelopeKey{
+					Flags: flags,
+				},
+			},
+			AskInput: false,
+		}
 
-			err = setupRunner.RunTasks(args[1:]...)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "Error running setup tasks. Check logs for more information.")
-				log.WithError(err).Errorf("main:main() Error running setup tasks: %+v\n", err)
-				os.Exit(1)
-			}
-		} else {
-			fmt.Println("WPM_NOSETUP is set, skipping setup")
-			log.Info("main:main() WPM_NOSETUP is set. Skipping setup")
+		// if "setup all" is passed we need to run all the tasks in order
+		tasklist := []string{}
+		if args[1] != "all" {
+			tasklist = args[1:]
+		}
+
+		err = setupRunner.RunTasks(tasklist...)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error running setup tasks %s: %s", strings.Join(args[1:], " "), err.Error())
+			log.WithError(err).Errorf("main:main() Error running setup tasks %s: %s\n", strings.Join(args[1:], " "), err.Error())
+			log.Tracef("%+v", err)
 			os.Exit(1)
 		}
 
@@ -351,6 +368,7 @@ func main() {
 		fmt.Println(imageUUID)
 
 	case "uninstall":
+		config.LogConfiguration(false, false)
 		fmt.Println("Uninstalling WPM")
 		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
 			deleteFiles(consts.ConfigDirPath)
@@ -375,11 +393,17 @@ func main() {
 }
 
 func runCommand(cmd string, args []string) (string, error) {
+	log.Trace("main:runCommand() Entering")
+	defer log.Trace("main:runCommand() Leaving")
+
 	out, err := exec.Command(cmd, args...).Output()
 	return string(out), err
 }
 
 func usage() {
+	log.Trace("main:usage() Entering")
+	defer log.Trace("main:usage() Leaving")
+
 	fmt.Printf("Workload Policy Manager\n")
 	fmt.Printf("usage : %s <command> [<args>]\n\n", os.Args[0])
 	fmt.Printf("Following are the list of commands\n")
@@ -397,14 +421,17 @@ func usage() {
 	fmt.Printf("\n\tuninstall --purge  Uninstalls wpm and deletes the existing configuration directory\n")
 	fmt.Printf("\n\tusage : %s setup [<tasklist>]\n", os.Args[0])
 	fmt.Printf("\t\t<tasklist>-space separated list of tasks\n")
-	fmt.Printf("\t\t\t-Supported tasks - CreateEnvelopeKey\n")
+	fmt.Printf("\t\t\t-Supported setup tasks - all download_ca_cert download_cert CreateEnvelopeKey\n")
 	fmt.Printf("\tExample :-\n")
-	fmt.Printf("\t\t%s setup\n", os.Args[0])
+	fmt.Printf("\t\t%s setup all\n", os.Args[0])
+	fmt.Printf("\t\t        - Runs all the setup tasks required in the right order\n")
 	fmt.Printf("\t\t%s setup CreateEnvelopeKey\n", os.Args[0])
+	fmt.Printf("\t\t        - Option [--force] overwrites any existing keypairs\n")
 	fmt.Printf("\t\t%s setup download_ca_cert [--force]\n", os.Args[0])
 	fmt.Printf("\t\t        - Download CMS root CA certificate\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads new root CA cert\n")
 	fmt.Printf("\t\t       - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
+	fmt.Printf("\t\t       - Environment variable CMS_TLS_CERT_SHA384=<sha384ForCMSTLSCert>\n")
 	fmt.Printf("\t\t%s setup download_cert Flavor-Signing [--force]\n", os.Args[0])
 	fmt.Printf("\t\t        - Generates Key pair and CSR, gets it signed from CMS\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads newly signed Flavor Signing cert\n")
@@ -416,13 +443,15 @@ func usage() {
 	fmt.Printf("\t\t        - Environment variable WPM_CERT_COUNTRY=<CERTIFICATE COUNTRY> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_CERT_LOCALITY=<CERTIFICATE LOCALITY> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config\n")
-	fmt.Printf("\t\t        - Environment variable WPM_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config\n")
-	fmt.Printf("\t\t        - Environment variable WPM_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config\n")
 }
 
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
+	log.Trace("main:deleteFiles() Entering")
+	defer log.Trace("main:deleteFiles() Leaving")
+
 	for _, path := range filePath {
 		log.Info("\n Deleting : ", path)
+		fmt.Println("Deleting : ", path)
 		err := os.RemoveAll(path)
 		if err != nil {
 			errorFiles = append(errorFiles, path)
@@ -436,6 +465,9 @@ func deleteFiles(filePath ...string) (errorFiles []string, err error) {
 
 //Usage command line usage string
 func imageFlavorUsage() {
+	log.Trace("main:imageFlavorUsage() Entering")
+	defer log.Trace("main:imageFlavorUsage() Leaving")
+
 	fmt.Println("usage: wpm create-image-flavor [-l label] [-i in] [-o out] [-e encout] [-k key]\n" +
 		"  -l, --label     image flavor label\n" +
 		"  -i, --in        input image file path\n" +
@@ -449,6 +481,9 @@ func imageFlavorUsage() {
 
 //Usage command line usage string
 func containerFlavorUsage() {
+	log.Trace("main:containerFlavorUsage() Entering")
+	defer log.Trace("main:containerFlavorUsage() Leaving")
+
 	fmt.Println("usage: wpm create-container-image-flavor [-i img-name] [-t tag] [-f dockerFile] [-d build-dir] [-k keyId]\n" +
 		"                            [-e] [-s] [-n notaryServer] [-o out-file]\n" +
 		"  -i,       --img-name                     container image name\n" +

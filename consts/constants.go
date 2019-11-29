@@ -33,6 +33,8 @@ const (
 	DefaultWpmLocality             = "SC"
 	DefaultWpmSan                  = "127.0.0.1,localhost"
 	LogDirPath                     = "/var/log/workload-policy-manager/"
+	LogEntryMaxlengthEnv           = "LOG_ENTRY_MAXLENGTH"
+	DefaultLogEntryMaxlength       = 300
 	LogFileName                    = LogDirPath + "wpm.log"
 	SecLogFileName                 = LogDirPath + "wpm_security.log"
 	EnvelopePublickeyLocation      = ConfigDirPath + "envelopePublicKey.pub"
