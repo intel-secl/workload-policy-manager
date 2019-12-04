@@ -50,7 +50,7 @@ var Configuration struct {
 		Username string
 		Password string
 	}
-	LogLevel          logrus.Level
+	LogLevel          string
 	LogEntryMaxLength int
 	ConfigComplete    bool
 }
@@ -206,16 +206,17 @@ func SaveConfiguration(c csetup.Context) error {
 
 	ll, err := c.GetenvString(consts.LogLevelEnvVar, "Logging Level")
 	if err != nil {
-		if Configuration.LogLevel.String() == "" {
+		if Configuration.LogLevel == "" {
 			log.Infof("config/config:SaveConfiguration() %s not defined, using default log level: Info", consts.LogLevelEnvVar)
-			Configuration.LogLevel = logrus.InfoLevel
+			Configuration.LogLevel = logrus.InfoLevel.String()
 		}
 	} else {
-		Configuration.LogLevel, err = logrus.ParseLevel(ll)
+		llp, err := logrus.ParseLevel(ll)
 		if err != nil {
 			log.Info("config/config:SaveConfiguration() Invalid log level specified in env, using default log level: Info")
-			Configuration.LogLevel = logrus.InfoLevel
+			Configuration.LogLevel = logrus.InfoLevel.String()
 		} else {
+			Configuration.LogLevel = llp.String()
 			log.Infof("config/config:SaveConfiguration() Log level set %s\n", ll)
 		}
 	}
@@ -263,13 +264,14 @@ func LogConfiguration(stdOut, logFile bool) error {
 
 	ioWriterSecurity := io.MultiWriter(ioWriterDefault, secLogFile)
 
-	if Configuration.LogLevel.String() == "" {
+	if Configuration.LogLevel == "" {
 		log.Infof("config/config:SaveConfiguration() %s not defined, using default log level: Info\n", consts.LogLevelEnvVar)
-		Configuration.LogLevel = logrus.InfoLevel
+		Configuration.LogLevel = logrus.InfoLevel.String()
 	}
 
-	commLogInt.SetLogger(commLog.DefaultLoggerName, Configuration.LogLevel, &commLog.LogFormatter{MaxLength: Configuration.LogEntryMaxLength}, ioWriterDefault, false)
-	commLogInt.SetLogger(commLog.SecurityLoggerName, Configuration.LogLevel, &commLog.LogFormatter{MaxLength: Configuration.LogEntryMaxLength}, ioWriterSecurity, false)
+	llp, _ := logrus.ParseLevel(Configuration.LogLevel)
+	commLogInt.SetLogger(commLog.DefaultLoggerName, llp, &commLog.LogFormatter{MaxLength: Configuration.LogEntryMaxLength}, ioWriterDefault, false)
+	commLogInt.SetLogger(commLog.SecurityLoggerName, llp, &commLog.LogFormatter{MaxLength: Configuration.LogEntryMaxLength}, ioWriterSecurity, false)
 
 	secLog.Trace("config/config:LogConfiguration() Security log initiated")
 	log.Trace("config/config:LogConfiguration() Loggers setup finished")

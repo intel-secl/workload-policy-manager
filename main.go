@@ -384,9 +384,6 @@ func main() {
 	case "--version", "-v", "version", "-version":
 		printVersion()
 
-	case "create-software-flavor":
-		fmt.Println("Not supported")
-
 	default:
 		fmt.Printf("Unrecognized command: %s\n", arg)
 	}
@@ -430,8 +427,8 @@ func usage() {
 	fmt.Printf("\t\t%s setup download_ca_cert [--force]\n", os.Args[0])
 	fmt.Printf("\t\t        - Download CMS root CA certificate\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads new root CA cert\n")
-	fmt.Printf("\t\t       - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
-	fmt.Printf("\t\t       - Environment variable CMS_TLS_CERT_SHA384=<sha384ForCMSTLSCert>\n")
+	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
+	fmt.Printf("\t\t        - Environment variable CMS_TLS_CERT_SHA384=<sha384ForCMSTLSCert>\n")
 	fmt.Printf("\t\t%s setup download_cert Flavor-Signing [--force]\n", os.Args[0])
 	fmt.Printf("\t\t        - Generates Key pair and CSR, gets it signed from CMS\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads newly signed Flavor Signing cert\n")
