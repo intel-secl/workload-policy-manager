@@ -1,5 +1,4 @@
 {
- "experimental": true,
  "storage-driver": "secureoverlay2",
  "storage-opts": ["overlay2.override_kernel_check=1"]
 }
