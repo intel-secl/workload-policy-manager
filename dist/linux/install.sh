@@ -45,7 +45,6 @@ echo_warning() {
   return 1
 }
 
-
 echo_info() {
   if [ "$TERM_DISPLAY_MODE" = "color" ]; then echo -en "${TERM_COLOR_CYAN}"; fi
   echo ${@:-"[INFO]"}
@@ -54,7 +53,6 @@ echo_info() {
 }
 
 ############################################################################################################
-
 
 # default settings
 APPLICATION=workload-policy-manager
@@ -68,10 +66,9 @@ WPM_LOGS=${WPM_LOGS:-/var/log/${APPLICATION}}
 INSTALL_LOG_FILE=${INSTALL_LOG_FILE:-$WPM_LOGS/install.log}
 WPM_LOG_LEVEL=${WPM_LOG_LEVEL:-INFO}
 
-
 # Deployment phase
 # 2. load installer environment file, if present
-if [ -f ~/wpm.env  ]; then
+if [ -f ~/wpm.env ]; then
   echo_info "Loading environment variables from $(cd ~ && pwd)/wpm.env"
   . ~/wpm.env
   env_file_exports=$(cat ~/wpm.env | grep -E '^[A-Z0-9_]+\s*=' | cut -d = -f 1)
@@ -87,13 +84,13 @@ if [ $? -ne 0 ]; then
   echo_failure "Cannot write to log directory: $(dirname $INSTALL_LOG_FILE)"
   exit 1
 fi
-date > $INSTALL_LOG_FILE
+date >$INSTALL_LOG_FILE
 if [ $? -ne 0 ]; then
   echo_failure "Cannot write to log file: $INSTALL_LOG_FILE"
   exit 1
 fi
 
-echo_info "Creating application directories and assigning permissions...."  | tee -a $INSTALL_LOG_FILE
+echo_info "Creating application directories and assigning permissions...." | tee -a $INSTALL_LOG_FILE
 # 8. create application directories (chown will be repeated near end of this script, after setup)
 for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN $WPM_CA_CONFIGURATION $WPM_CA_JWT_DIR; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
@@ -106,37 +103,48 @@ for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN $WPM_CA_CONFIGURATION $WP
 done
 
 # if an existing wpm is already running, stop it while we install
-existing_wpm=`which wpm 2>/dev/null`
+existing_wpm=$(which wpm 2>/dev/null)
 if [ -f "$existing_wpm" ]; then
- echo_success "Workload Policy Manager is already installed."  | tee -a $INSTALL_LOG_FILE
- exit 0
+  echo_success "Workload Policy Manager is already installed." | tee -a $INSTALL_LOG_FILE
+  exit 0
 fi
 
 cp -f $APPLICATION $WPM_BIN/wpm
 ln -sfT $WPM_BIN/wpm $WPM_SYMLINK
-echo_success "WPM installation complete"  | tee -a $INSTALL_LOG_FILE
+echo_success "WPM installation complete" | tee -a $INSTALL_LOG_FILE
 
 # exit wpm setup if WPM_NOSETUP is set
 if [ "$WPM_NOSETUP" = "true" ]; then
   echo "WPM_NOSETUP value is set to true. So, skipping the wpm setup task." | tee -a $INSTALL_LOG_FILE
-  exit 0;
+  exit 0
 fi
 
 # 33. wpm setup
 wpm setup all | tee -a $INSTALL_LOG_FILE
+SETUP_RESULT=${PIPESTATUS[0]}
+
+if [ $SETUP_RESULT -ne 0 ]; then
+  echo_failure "Error: WPM setup tasks failed. Exiting."
+  exit $SETUP_RESULT
+fi
 
 #Install secure docker daemon with wpm only if WPM_WITH_SECURE_DOCKER_DAEMON is enabled in wpm.env
 if [ "$WPM_WITH_CONTAINER_SECURITY" = "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" = "Y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" = "yes" ]; then
   which docker 2>/dev/null
   if [ $? -ne 0 ]; then
-    echo "Docker is not installed" | tee -a $INSTALL_LOG_FILE
+    echo_failure "Error: Docker is required for Secure Docker Daemon to be installed!" | tee -a $INSTALL_LOG_FILE
     exit 1
   fi
   which cryptsetup 2>/dev/null
   if [ $? -ne 0 ]; then
     echo "Installing cryptsetup" | tee -a $INSTALL_LOG_FILE
     yum install -y cryptsetup | tee -a $INSTALL_LOG_FILE
-  fi 
+    CRYPTSETUP_RESULT=${PIPESTATUS[0]}
+    if [ $CRYPTSETUP_RESULT -ne 0 ]; then
+      echo_failure "Error: Secure Docker requires cryptsetup - Install failed. Exiting."
+      exit $CRYPTSETUP_RESULT
+    fi
+  fi
   echo "Installing secure docker daemon" | tee -a $INSTALL_LOG_FILE
   systemctl stop docker
   mkdir -p $WPM_HOME/secure-docker-daemon/backup
