@@ -37,11 +37,7 @@ var Configuration struct {
 		BaseURL string
 	}
 	Subject struct {
-		CommonName   string
-		Organization string
-		Locality     string
-		Province     string
-		Country      string
+		CommonName string
 	}
 	Aas struct {
 		APIURL string
@@ -172,37 +168,6 @@ func SaveConfiguration(c csetup.Context) error {
 		Configuration.Subject.CommonName = consts.DefaultWpmFlavorSigningCn
 	}
 
-	certOrg, err := c.GetenvString(consts.WpmCertOrganizationEnv, "Organization")
-	if err == nil && certOrg != "" {
-		Configuration.Subject.Organization = certOrg
-	} else if Configuration.Subject.Organization == "" {
-		Configuration.Subject.Organization = consts.DefaultWpmOrganization
-		log.Infof("config/config.go:SaveConfiguration() Using default value for %s\n", consts.WpmCertOrganizationEnv)
-	}
-
-	certCountry, err := c.GetenvString(consts.WpmCertCountryEnv, "Country")
-	if err == nil && certCountry != "" {
-		Configuration.Subject.Country = certCountry
-	} else if Configuration.Subject.Country == "" {
-		Configuration.Subject.Country = consts.DefaultWpmCountry
-		log.Infof("config/config.go:SaveConfiguration() Using default value for %s\n", consts.WpmCertCountryEnv)
-	}
-
-	certProvince, err := c.GetenvString(consts.WpmCertProvinceEnv, "Province")
-	if err == nil && certProvince != "" {
-		Configuration.Subject.Province = certProvince
-	} else if Configuration.Subject.Province == "" {
-		Configuration.Subject.Province = consts.DefaultWpmProvince
-		log.Infof("config/config.go:SaveConfiguration() Using default value for %s\n", consts.WpmCertProvinceEnv)
-	}
-
-	certLocality, err := c.GetenvString(consts.WpmCertLocalityEnv, "Locality")
-	if err == nil && certLocality != "" {
-		Configuration.Subject.Locality = certLocality
-	} else if Configuration.Subject.Locality == "" {
-		Configuration.Subject.Locality = consts.DefaultWpmLocality
-		log.Infof("config/config.go:SaveConfiguration() Using default value for %s\n", consts.WpmCertLocalityEnv)
-	}
 
 	ll, err := c.GetenvString(consts.LogLevelEnvVar, "Logging Level")
 	if err != nil {

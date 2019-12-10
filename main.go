@@ -149,10 +149,6 @@ func main() {
 					KeyAlgorithmLength: consts.DefaultKeyAlgorithmLength,
 					CmsBaseURL:         config.Configuration.Cms.BaseURL,
 					Subject: pkix.Name{
-						Country:      []string{config.Configuration.Subject.Country},
-						Organization: []string{config.Configuration.Subject.Organization},
-						Locality:     []string{config.Configuration.Subject.Locality},
-						Province:     []string{config.Configuration.Subject.Province},
 						CommonName:   config.Configuration.Subject.CommonName,
 					},
 					SanList:       consts.DefaultWpmSan,
@@ -436,10 +432,6 @@ func usage() {
 	fmt.Printf("\t\t        - Environment variable BEARER_TOKEN=<token> for downloading signed certificate from CMS\n")
 	fmt.Printf("\t\t        - Environment variable CERT_PATH=<cert_path> to override default specified in config\n")
 	fmt.Printf("\t\t        - Environment variable WPM_FLAVOR_SIGN_CERT_CN=<COMMON NAME> to override default specified in config\n")
-	fmt.Printf("\t\t        - Environment variable WPM_CERT_ORG=<CERTIFICATE ORGANIZATION> to override default specified in config\n")
-	fmt.Printf("\t\t        - Environment variable WPM_CERT_COUNTRY=<CERTIFICATE COUNTRY> to override default specified in config\n")
-	fmt.Printf("\t\t        - Environment variable WPM_CERT_LOCALITY=<CERTIFICATE LOCALITY> to override default specified in config\n")
-	fmt.Printf("\t\t        - Environment variable WPM_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config\n")
 }
 
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
