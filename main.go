@@ -70,6 +70,14 @@ func main() {
 
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
+		flags := args
+
+		// if setup is provided without task name then print usage and quit
+		if len(args) == 1 {
+			usage()
+			os.Exit(0)
+		}
+
 		// Set log configurations
 		err = config.LogConfiguration(isStdOut, true)
 		if err != nil {
@@ -81,20 +89,6 @@ func main() {
 			fmt.Printf("%s is set to true. Skipping setup tasks.\n", consts.WpmNosetupEnv)
 			log.Infof("main:main() %s is set to true. Skipping setup.\n", consts.WpmNosetupEnv)
 			os.Exit(1)
-		}
-
-		// Everytime, we run setup, need to make sure that the configuration is complete
-		// So lets run the Configurer as a seperate runner. We could have made a single runner
-		// with the first task as the Configurer. However, the logic in the common setup task
-		// runner runs only the tasks passed in the argument if there are 1 or more tasks.
-		// This means that with current logic, if there are no specific tasks passed in the
-		// argument, we will only run the confugurer but the intention was to run all of them
-		flags := args
-
-		// if setup is provided without task name then print usage and quit
-		if len(args) == 1 {
-			usage()
-			os.Exit(0)
 		}
 
 		if len(args) >= 2 &&
@@ -416,39 +410,53 @@ func usage() {
 
 	fmt.Printf("Workload Policy Manager\n")
 	fmt.Printf("usage : %s <command> [<args>]\n\n", os.Args[0])
-	fmt.Printf("Following are the list of commands\n")
-	fmt.Printf("\tcreate-image-flavor|create-container-image-flavor|get-container-image-id|create-software-flavor|unwrap-key|uninstall|--help|--version\n\n")
-	fmt.Printf("\tcreate-image-flavor - Used to create image flavors and encrypt the image\n")
-	fmt.Printf("\t")
+	fmt.Printf("Available commands:\n")
+	fmt.Printf("\t--help           \n")
+	fmt.Printf("\t--version\n")
+	fmt.Printf("\tcreate-image-flavor\n")
+	fmt.Printf("\tcreate-container-image-flavor\n")
+	fmt.Printf("\tget-container-image-id\n")
+	fmt.Printf("\tcreate-software-flavor\n")
+	fmt.Printf("\tunwrap-key\n")
+	fmt.Printf("\tsetup\n")
+	fmt.Printf("\tuninstall\n")
+
+	fmt.Printf("\ncreate-image-flavor     Create VM image flavors and encrypt the image\n")
 	imageFlavorUsage()
-	fmt.Printf("\tcreate-container-image-flavor - Used to create container image flavors and encrypt the container image\n")
-	fmt.Printf("\t")
+
+	fmt.Printf("\ncreate-container-image-flavor     Create container image flavors and encrypt the container image\n")
 	containerFlavorUsage()
-	fmt.Printf("\n\t%s get-container-image-id [<sha256 of image id>] - Used to get the container image ID given the sha256 of the image\n", os.Args[0])
-	fmt.Printf("\n\t%s unwrap-key [-i in]\n", os.Args[0])
-	fmt.Printf("\t\t          -i, --in        wrapped key file path\n")
-	fmt.Printf("\n\tuninstall          Uninstall wpm\n")
-	fmt.Printf("\n\tuninstall --purge  Uninstalls wpm and deletes the existing configuration directory\n")
-	fmt.Printf("\n\tusage : %s setup [<tasklist>]\n", os.Args[0])
-	fmt.Printf("\t\t<tasklist>-space separated list of tasks\n")
-	fmt.Printf("\t\t\t-Supported setup tasks - all download_ca_cert download_cert CreateEnvelopeKey\n")
-	fmt.Printf("\tExample :-\n")
-	fmt.Printf("\t\t%s setup all\n", os.Args[0])
-	fmt.Printf("\t\t        - Runs all the setup tasks required in the right order\n")
-	fmt.Printf("\t\t%s setup CreateEnvelopeKey\n", os.Args[0])
-	fmt.Printf("\t\t        - Option [--force] overwrites any existing keypairs\n")
-	fmt.Printf("\t\t%s setup download_ca_cert [--force]\n", os.Args[0])
-	fmt.Printf("\t\t        - Download CMS root CA certificate\n")
+
+	fmt.Printf("\nget-container-image-id [<sha256 of image id>]     - Fetch the container image ID given the sha256 of the image\n")
+
+	fmt.Printf("\nunwrap-key -i in     Unwraps the image encryption key fetched from KMS\n")
+	fmt.Printf("\t  -i, --in     wrapped key file path\n")
+
+	fmt.Printf("\nsetup command usage: setup [tasklist...]\n")
+	fmt.Printf("\t<tasklist>-space separated list of tasks\n")
+	fmt.Printf("\tSupported setup tasks:\n")
+	fmt.Printf("\t\tall     Runs all the setup tasks required in the right order\n")
+	fmt.Printf("\t\tCreateEnvelopeKey [--force]   Creates the key pair required to securely transfer key from KMS\n")
+	fmt.Printf("\t\t        - Option [--force] overwrites existing envelope keypairs\n")
+	fmt.Printf("\t\tdownload_ca_cert [--force]\n")
+	fmt.Printf("\t\t        Download CMS root CA certificate\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads new root CA cert\n")
-	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
-	fmt.Printf("\t\t        - Environment variable CMS_TLS_CERT_SHA384=<sha384ForCMSTLSCert>\n")
-	fmt.Printf("\t\t%s setup download_cert Flavor-Signing [--force]\n", os.Args[0])
-	fmt.Printf("\t\t        - Generates Key pair and CSR, gets it signed from CMS\n")
+	fmt.Printf("\t\t        Required env variables are:\n")
+	fmt.Printf("\t\t        - CMS_BASE_URL=<url> for CMS API URL\n")
+	fmt.Printf("\t\t        - CMS_TLS_CERT_SHA384=<sha384ForCMSTLSCert>\n")
+	fmt.Printf("\t\tdownload_cert Flavor-Signing [--force]\n")
+	fmt.Printf("\t\t        Generates Key pair and CSR, gets it signed from CMS\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads newly signed Flavor Signing cert\n")
-	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
-	fmt.Printf("\t\t        - Environment variable BEARER_TOKEN=<token> for downloading signed certificate from CMS\n")
-	fmt.Printf("\t\t        - Environment variable CERT_PATH=<cert_path> to override default specified in config\n")
-	fmt.Printf("\t\t        - Environment variable WPM_FLAVOR_SIGN_CERT_CN=<COMMON NAME> to override default specified in config\n")
+	fmt.Printf("\t\t        Required env variables are:\n")
+	fmt.Printf("\t\t        - CMS_BASE_URL=<url> for CMS API URL\n")
+	fmt.Printf("\t\t        - BEARER_TOKEN=<token> for downloading signed certificate from CMS\n")
+
+	fmt.Printf("\nuninstall [--purge]     Uninstall Workload Policy Manager\n")
+	fmt.Printf("\t          --purge flag when supplied also deletes the existing WPM configuration\n")
+
+	fmt.Printf("\nhelp        Displays this help information\n")
+
+	fmt.Printf("\nversion     Prints the build and version information\n")
 }
 
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
@@ -475,14 +483,14 @@ func imageFlavorUsage() {
 	defer log.Trace("main:imageFlavorUsage() Leaving")
 
 	fmt.Println("usage: wpm create-image-flavor [-l label] [-i in] [-o out] [-e encout] [-k key]\n" +
-		"  -l, --label     image flavor label\n" +
-		"  -i, --in        input image file path\n" +
-		"  -o, --out       (optional) output image flavor file path\n" +
-		"                  if not specified, will print to the console\n" +
-		"  -e, --encout    (optional) output encrypted image file path\n" +
-		"                  if not specified, encryption is skipped\n" +
-		"  -k, --key       (optional) existing key ID\n" +
-		"                  if not specified, a new key is generated\n")
+		"\t  -l, --label     image flavor label\n" +
+		"\t  -i, --in        input image file path\n" +
+		"\t  -o, --out       (optional) output image flavor file path\n" +
+		"\t                  if not specified, will print to the console\n" +
+		"\t  -e, --encout    (optional) output encrypted image file path\n" +
+		"\t                  if not specified, encryption is skipped\n" +
+		"\t  -k, --key       (optional) existing key ID\n" +
+		"\t                  if not specified, a new key is generated\n")
 }
 
 //Usage command line usage string
@@ -490,21 +498,22 @@ func containerFlavorUsage() {
 	log.Trace("main:containerFlavorUsage() Entering")
 	defer log.Trace("main:containerFlavorUsage() Leaving")
 
-	fmt.Println("usage: wpm create-container-image-flavor [-i img-name] [-t tag] [-f dockerFile] [-d build-dir] [-k keyId]\n" +
+	fmt.Println("usage: wpm create-container-image-flavor -i img-name [-t tag] [-f dockerFile] [-d build-dir] [-k keyId]\n" +
 		"                            [-e] [-s] [-n notaryServer] [-o out-file]\n" +
-		"  -i,       --img-name                     container image name\n" +
-		"  -t,       --tag                          (optional)container image tag name\n" +
-		"  -f,       --docker-file                  (optional) container file path\n" +
-		"                                           to build the container image\n" +
-		"  -d,       --build-dir                    (optional) build directory to\n" +
-		"                                           build the container image\n" +
-		"  -k,       --key-id                       (optional) existing key ID\n" +
-		"                                           if not specified, a new key is generated\n" +
-		"  -e,       --encryption-required            (optional) boolean parameter specifies if\n" +
-		"                                           container image needs to be encrypted\n" +
-		"  -s, 	     --integrity-enforced             (optional) boolean parameter specifies if\n" +
-		"                                           container image should be signed\n" +
-		"  -n,        --notary-server                (optional) specify notary server url\n" +
-		"  -o,        --out-file                     (optional) specify output file path\n")
+
+		"\t  -i, --img-name                  container image name\n" +
+		"\t  -t, --tag                       (optional) container image tag name\n" +
+		"\t  -f, --docker-file               (optional) container file path\n" +
+		"\t                                  to build the container image\n" +
+		"\t  -d, --build-dir                 (optional) build directory to\n" +
+		"\t                                  build the container image\n" +
+		"\t  -k, --key-id                    (optional) existing key ID\n" +
+		"\t                                  if not specified, a new key is generated\n" +
+		"\t  -e, --encryption-required       (optional) boolean parameter specifies if\n" +
+		"\t                                  container image needs to be encrypted\n" +
+		"\t  -s, --integrity-enforced        (optional) boolean parameter specifies if\n" +
+		"\t                                  container image should be signed\n" +
+		"\t  -n, --notary-server             (optional) specify notary server url\n" +
+		"\t  -o, --out-file                  (optional) specify output file path\n")
 
 }
