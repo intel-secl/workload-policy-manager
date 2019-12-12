@@ -39,4 +39,7 @@ const (
 	ServiceUsername                = "WPM_SERVICE_USERNAME"
 	ServicePassword                = "WPM_SERVICE_PASSWORD"
 	CmsTlsCertDigestEnv            = "CMS_TLS_CERT_SHA384"
+	WPMConsoleEnableEnv            = "WPM_CONSOLE_OUT_ENABLE"
+	SampleUUID                     = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	WpmNosetupEnv                  = "WPM_NOSETUP"
 )

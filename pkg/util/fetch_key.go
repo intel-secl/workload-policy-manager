@@ -48,7 +48,7 @@ func FetchKey(keyID string) ([]byte, string, error) {
 	//Build the key URL, to be inserted later on when the image flavor is created
 	keyURL, err := url.Parse(config.Configuration.Kms.APIURL + "keys/" + keyID + "/transfer")
 	if err != nil {
-		return []byte(""), "", errors.Wrap(err, "pkg/util/fetch_key.go:FetchKey() Error building KMS key URL")
+		return []byte(""), "", errors.Wrap(err, "Error building KMS key URL")
 	}
 	keyURLString = keyURL.String()
 	log.Debugf("pkg/util/fetch_key.go:FetchKey() keyURL: %s", keyURLString)

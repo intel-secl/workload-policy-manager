@@ -32,7 +32,7 @@ func (t *ISO8601Time) UnmarshalJSON(b []byte) (err error) {
 	defer log.Trace("pkg/kmsclient/client.go:UnmarshalJSON() Leaving")
 
 	t.Time, err = time.Parse(ISO8601Layout, strings.Trim(string(b), "\""))
-	return errors.Wrap(err, "pkg/kmsclient/client.go:UnmarshalJSON Invalid timestamp")
+	return errors.Wrap(err, "Invalid timestamp")
 }
 
 // AuthToken issued by KMS

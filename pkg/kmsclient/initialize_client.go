@@ -22,11 +22,14 @@ func InitializeKMSClient() (*Client, error) {
 	defer log.Trace("pkg/kmsclient/initialize_client.go:InitializeKMSClient() Leaving")
 
 	var kc *Client
-	hc, _ := clients.HTTPClientWithCADir(consts.TrustedCaCertsDir)
+	hc, err := clients.HTTPClientWithCADir(consts.TrustedCaCertsDir)
 	kc = &Client{
 		BaseURL:    config.Configuration.Kms.APIURL,
 		HTTPClient: hc,
 	}
 
+	if err != nil {
+		return nil, err
+	}
 	return kc, nil
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 
 	cLog "intel/isecl/lib/common/log"
+	cMsg "intel/isecl/lib/common/log/message"
 )
 
 var (
@@ -38,29 +39,31 @@ func Encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation 
 	// reading image file
 	image, err := ioutil.ReadFile(imagePath)
 	if err != nil {
-		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error reading the image file")
+		return errors.Wrap(err, "Error reading the image file")
 	}
 
 	key, err := UnwrapKey(wrappedKey, privateKeyLocation)
 	if err != nil {
-		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error while unwrapping the key")
+		return errors.Wrap(err, "Error while unwrapping the key")
 	}
 	// creating a new cipher block of 128 bits
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error initializing cipher")
+		return errors.Wrap(err, "Error initializing cipher")
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error creating a cipher block")
+		return errors.Wrap(err, "Error creating a cipher block")
 	}
+
+	log.Infof("pkg/util/encrypt.go:Encrypt() %s", cMsg.EncKeyUsed)
 
 	// assigning a 12 byte empty array to store random value
 	iv := make([]byte, 12)
 	// reading random value into the byte array
 	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
-		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error creating random IV value")
+		return errors.Wrap(err, "Error creating random IV value")
 	}
 
 	copy(encryptionHeader.MagicText[:], crypt.EncryptionHeaderMagicText)
@@ -72,7 +75,7 @@ func Encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation 
 	encryptionHeaderSlice := &bytes.Buffer{}
 	err = binary.Write(encryptionHeaderSlice, binary.LittleEndian, encryptionHeader)
 	if err != nil {
-		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error while writing encryption header struc values in to buffer")
+		return errors.Wrap(err, "Error while writing encryption header struc values in to buffer")
 	}
 
 	// The first 44 bytes of the encrypted file is the encryption header and
@@ -80,7 +83,7 @@ func Encrypt(imagePath string, privateKeyLocation string, encryptedFileLocation 
 	encryptedDataWithHeader := gcm.Seal(encryptionHeaderSlice.Bytes(), iv, image, nil)
 	err = ioutil.WriteFile(encryptedFileLocation, encryptedDataWithHeader, 0600)
 	if err != nil {
-		return errors.Wrap(err, "pkg/util/encrypt.go:Encrypt() Error during writing the encrypted image to file")
+		return errors.Wrap(err, "Error during writing the encrypted image to file")
 	}
 
 	log.Info("pkg/util/encrypt.go:Encrypt() Successfully encrypted image")
@@ -94,19 +97,19 @@ func UnwrapKey(wrappedKey []byte, privateKeyLocation string) ([]byte, error) {
 	var unwrappedKey []byte
 	privateKey, err := ioutil.ReadFile(privateKeyLocation)
 	if err != nil {
-		return unwrappedKey, errors.Wrap(err, "pkg/util/encrypt.go:UnwrapKey() Error reading private envelope key file")
+		return unwrappedKey, errors.Wrap(err, "Error reading private envelope key file")
 	}
 
 	privateKeyBlock, _ := pem.Decode(privateKey)
 	var pri *rsa.PrivateKey
 	pri, err = x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes)
 	if err != nil {
-		return unwrappedKey, errors.Wrap(err, "pkg/util/encrypt.go:UnwrapKey() Error decoding private envelope key")
+		return unwrappedKey, errors.Wrap(err, "Error decoding private envelope key")
 	}
 
 	decryptedKey, errDecrypt := rsa.DecryptOAEP(sha512.New384(), rand.Reader, pri, wrappedKey, nil)
 	if errDecrypt != nil {
-		return unwrappedKey, errors.Wrap(err, "pkg/util/encrypt.go:UnwrapKey() Error while unwrapping the key")
+		return unwrappedKey, errors.Wrap(err, "Error while decrypting the key")
 	}
 
 	log.Info("pkg/util/encrypt.go:Encrypt() Successfully unwrapped key")

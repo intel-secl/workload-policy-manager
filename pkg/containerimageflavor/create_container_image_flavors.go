@@ -62,7 +62,7 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 
 	//Return usage if input params are provided incorrectly
 	if len(strings.TrimSpace(imageName)) <= 0 {
-		return signedFlavor, errors.New("pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Missing image name")
+		return signedFlavor, errors.New("Missing image name")
 	}
 	flavorLabel := imageName + ":" + tag
 	if len(strings.TrimSpace(dockerFilePath)) > 0 || len(strings.TrimSpace(buildDir)) > 0 {
@@ -70,20 +70,20 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 		//Error if Dockerfile specified doesn't exist
 		_, err = os.Stat(dockerFilePath)
 		if os.IsNotExist(err) {
-			return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Dockerfile does not exist")
+			return signedFlavor, errors.Wrap(err, "Dockerfile does not exist")
 		}
 
 		//Error if build directory specified doesn't exist
 		_, err = os.Stat(buildDir)
 		if os.IsNotExist(err) {
-			return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Docker build directory does not exist")
+			return signedFlavor, errors.Wrap(err, "Docker build directory does not exist")
 		}
 
 		//Encrypt the image with the key
 		if encryptionRequired {
 			wrappedKey, keyURLString, err = util.FetchKey(keyID)
 			if err != nil {
-				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error fetching KMS key")
+				return signedFlavor, errors.Wrap(err, "Error fetching KMS key")
 			}
 			// We infer the keyID from the keyURLString
 			if keyID == "" {
@@ -93,10 +93,10 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 			wrappedKeyFileName := "wrappedKey_" + keyID + "_"
 			wrappedKeyFile, err := ioutil.TempFile("/tmp", wrappedKeyFileName)
 			if err != nil {
-				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to create wrapped key file")
+				return signedFlavor, errors.Wrap(err, "Unable to create wrapped key file")
 			}
 			if _, err = wrappedKeyFile.Write(wrappedKey); err != nil {
-				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to write wrapped key to file")
+				return signedFlavor, errors.Wrap(err, "Unable to write wrapped key to file")
 			}
 			defer os.Remove(wrappedKeyFile.Name())
 
@@ -111,7 +111,7 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 					imageName, tag, wrappedKeyFile.Name(), dockerFilePath, buildDir))
 			_, err = cmd.CombinedOutput()
 			if err != nil {
-				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to build container image with encryption")
+				return signedFlavor, errors.Wrap(err, "Unable to build container image with encryption")
 			}
 
 		} else {
@@ -119,13 +119,13 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 			_, err = exec.Command("docker", "build", "--no-cache", "-t", imageName+":"+tag,
 				"-f", dockerFilePath, buildDir).CombinedOutput()
 			if err != nil {
-				return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to build container image")
+				return signedFlavor, errors.Wrap(err, "Unable to build container image")
 			}
 		}
 	} else {
 		_, err = exec.Command("docker", "inspect", "--type=image", imageName+":"+tag).CombinedOutput()
 		if err != nil {
-			return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Unable to find image with name: "+imageName+" and tag: "+tag+"\nImage should be present locally")
+			return signedFlavor, errors.Wrap(err, "Unable to find image with name: "+imageName+" and tag: "+tag+"\nImage should be present locally")
 		}
 	}
 
@@ -138,18 +138,18 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 	//Create image flavor
 	containerImageFlavor, err := flavor.GetContainerImageFlavor(flavorLabel, encryptionRequired, keyURLString, integrityEnforced, notaryServerURL)
 	if err != nil {
-		return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error while creating image flavor")
+		return signedFlavor, errors.Wrap(err, "Error while creating image flavor: " + err.Error())
 	}
 
 	//Marshall the image flavor to a JSON string
 	containerImageFlavorJSON, err := json.Marshal(containerImageFlavor)
 	if err != nil {
-		return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error while marshalling image flavor")
+		return signedFlavor, errors.Wrap(err, "Error while marshalling image flavor: " + err.Error())
 	}
 
 	signedFlavor, err = flavorUtil.GetSignedFlavor(string(containerImageFlavorJSON), consts.FlavorSigningKeyPath)
 	if err != nil {
-		return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error while signing image flavor: ")
+		return signedFlavor, errors.Wrap(err, "Error while signing image flavor: " + err.Error())
 	}
 
 	//If no output flavor file path was specified, return the marshalled image flavor
@@ -160,7 +160,7 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 	//Otherwise, write it to the specified file
 	err = ioutil.WriteFile(outputFlavorFilePath, []byte(signedFlavor), 0600)
 	if err != nil {
-		return signedFlavor, errors.Wrap(err, "pkg/containerimageflavor/create_container_image_flavor.go:CreateContainerImageFlavor() Error writing image flavor to output file")
+		return signedFlavor, errors.Wrap(err, "Error writing image flavor to output file: " + err.Error())
 	}
 	return signedFlavor, nil
 }

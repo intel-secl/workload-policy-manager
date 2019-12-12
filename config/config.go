@@ -76,7 +76,7 @@ func Save() error {
 			// error is that the config doesnt yet exist, create it
 			file, err = os.Create(consts.ConfigFilePath)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Unable to write configuration file at %s", consts.ConfigFilePath)
 			}
 		}
 	}
@@ -167,7 +167,6 @@ func SaveConfiguration(c csetup.Context) error {
 		log.Infof("config/config.go:SaveConfiguration() Using default value for %s\n", consts.WpmFlavorSignCertCommonNameEnv)
 		Configuration.Subject.CommonName = consts.DefaultWpmFlavorSigningCn
 	}
-
 
 	ll, err := c.GetenvString(consts.LogLevelEnvVar, "Logging Level")
 	if err != nil {

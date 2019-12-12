@@ -94,17 +94,17 @@ func (k *Keys) Create(key KeyInfo) (*KeyInfo, error) {
 
 	kiJSON, err := json.Marshal(&key)
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:CreateKey() Error marshalling key creation request")
+		return nil, errors.Wrap(err, "Error marshalling key creation request")
 	}
 	baseURL, err := url.Parse(k.client.BaseURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:CreateKey() Error parsing key creation URL")
+		return nil, errors.Wrap(err, "Error parsing key creation URL")
 	}
 	keysURL, _ := url.Parse("keys")
 	reqURL := baseURL.ResolveReference(keysURL)
 	req, err := http.NewRequest("POST", reqURL.String(), bytes.NewBuffer(kiJSON))
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:CreateKey() Error creating key creation request")
+		return nil, errors.Wrap(err, "Error creating key creation request")
 	}
 
 	// Set the request headers
@@ -112,14 +112,14 @@ func (k *Keys) Create(key KeyInfo) (*KeyInfo, error) {
 	req.Header.Set("Content-Type", "application/json")
 	rsp, err := httpclient.SendRequest(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:CreateKey() Error response from key creation")
+		return nil, errors.Wrap(err, "Error response from key creation")
 	}
 
 	// Parse response
 	var kiOut KeyInfo
 	err = json.Unmarshal(rsp, &kiOut)
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:CreateKey() Response unmarshal failure")
+		return nil, errors.Wrap(err, "Response unmarshal failure")
 	}
 	return &kiOut, nil
 }
@@ -132,17 +132,17 @@ func (k *KeyID) Retrieve(pubKey string) ([]byte, error) {
 	var keyValue KeyObj
 	baseURL, err := url.Parse(k.client.BaseURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:Retrieve() Failed parsing KMS base URL")
+		return nil, errors.Wrap(err, "Failed parsing KMS base URL")
 	}
 	keyXferURL, err := url.Parse(fmt.Sprintf("keys/%s/transfer", k.ID))
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:Retrieve() Failed parsing key retrieve URL")
+		return nil, errors.Wrap(err, "Failed parsing key retrieve URL")
 	}
 	reqURL := baseURL.ResolveReference(keyXferURL)
 
 	req, err := http.NewRequest("POST", reqURL.String(), strings.NewReader(pubKey))
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:Retrieve() Error creating key retrieval request")
+		return nil, errors.Wrap(err, "Error creating key retrieval request")
 	}
 
 	// Set request headers
@@ -152,11 +152,11 @@ func (k *KeyID) Retrieve(pubKey string) ([]byte, error) {
 	rsp, err := httpclient.SendRequest(req)
 	log.Debugf("pkg/kmsclient/key.go:Retrieve() HTTP response %s", string(rsp))
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:Retrieve() Error response from key retrieve request")
+		return nil, errors.Wrap(err, "Error response from key retrieve request")
 	}
 	err = json.Unmarshal(rsp, &keyValue)
 	if err != nil {
-		return nil, errors.Wrap(err, "pkg/kmsclient/key.go:Retrieve() Error unmarshaling key retrieve response")
+		return nil, errors.Wrap(err, "Error unmarshaling key retrieve response")
 	}
 	log.Info("pkg/kmsclient/key.go:Retrieve() Successfully retrieved key")
 	return keyValue.Key, nil
