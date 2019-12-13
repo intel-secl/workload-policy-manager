@@ -38,13 +38,11 @@ func (ek CreateEnvelopeKey) Validate(c csetup.Context) error {
 
 	_, err := os.Stat(consts.EnvelopePrivatekeyLocation)
 	if os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "Private key does not exist")
 		return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Validate() Private key does not exist")
 	}
 
 	_, err = os.Stat(consts.EnvelopePublickeyLocation)
 	if os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "Public key does not exist")
 		return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Validate() Public key does not exist")
 	}
 	return nil

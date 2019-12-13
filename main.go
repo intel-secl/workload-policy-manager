@@ -81,7 +81,7 @@ func main() {
 		// Set log configurations
 		err = config.LogConfiguration(isStdOut, true)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error configuring logging. Falling back to console logging.")
+			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 		}
 
 		// Check if nosetup environment variable is true, if yes then skip the setup tasks
@@ -116,6 +116,7 @@ func main() {
 		err = installRunner.RunTasks("Configurer")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error validating WPM configuration.")
+			log.WithError(err).Errorf("%s Error validating configuration: %s", commMsg.AppRuntimeErr, err.Error())
 			log.Tracef("%+v", err)
 			os.Exit(1)
 		}
@@ -200,7 +201,7 @@ func main() {
 
 		if len(strings.TrimSpace(*flavorLabel)) <= 0 || len(strings.TrimSpace(*inputImageFilePath)) <= 0 {
 			fmt.Fprintln(os.Stderr, "Error creating VM image flavor: Missing arguments Flavor label and image file path.")
-			log.Errorf("main:main() %s : Error creating VM image flavor: Missing arguments Flavor label and image file path - %s\n", commMsg.InvalidInputBadParam, err.Error())
+			log.Errorf("main:main() %s : Error creating VM image flavor: Missing arguments Flavor label and image file path\n", commMsg.InvalidInputBadParam)
 			log.Tracef("%+v", err)
 			imageFlavorUsage()
 			os.Exit(1)
@@ -210,7 +211,7 @@ func main() {
 		inputArr := []string{*flavorLabel, *outputFlavorFilePath, *inputImageFilePath, *outputEncImageFilePath}
 		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
 			fmt.Fprintln(os.Stderr, "Error creating VM image flavor: Invalid input args format")
-			log.WithError(err).Errorf("main:main() %s : Error creating VM image flavor. Parse error for input args: %s\n", commMsg.InvalidInputBadParam, inputArr)
+			log.WithError(validationErr).Errorf("main:main() %s : Error creating VM image flavor. Parse error for input args: [ %s ] - %s\n", commMsg.InvalidInputBadParam, inputArr, validationErr.Error())
 			log.Tracef("%+v", validationErr)
 			imageFlavorUsage()
 			os.Exit(1)
@@ -335,7 +336,7 @@ func main() {
 		inputArr := []string{*wrappedKeyFilePath}
 		if validationErr := validation.ValidateStrings(inputArr); validationErr != nil {
 			fmt.Fprintf(os.Stderr, "Error unwrapping key: Invalid key file path %s\n", *wrappedKeyFilePath)
-			log.WithError(err).Errorf("main:main() %s : Error unwrapping key: %s\n", commMsg.AppRuntimeErr, err.Error())
+			log.WithError(err).Errorf("main:main() %s : Error unwrapping key: %s\n", commMsg.AppRuntimeErr, validationErr.Error())
 			log.Tracef("%+v", err)
 			os.Exit(1)
 		}
