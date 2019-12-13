@@ -451,6 +451,9 @@ func usage() {
 	fmt.Printf("\t\t        Required env variables are:\n")
 	fmt.Printf("\t\t        - CMS_BASE_URL=<url> for CMS API URL\n")
 	fmt.Printf("\t\t        - BEARER_TOKEN=<token> for downloading signed certificate from CMS\n")
+	fmt.Printf("\t\t        Optional env variables are:\n")
+	fmt.Printf("\t\t        - Environment variable KEY_PATH=<key_path> Path of file where Flavor Signing key needs to be stored\n")
+	fmt.Printf("\t\t        - Environment variable CERT_PATH=<cert_path> Path of file/directory where Flavor Signing certificate needs to be stored\n")
 
 	fmt.Printf("\nuninstall [--purge]     Uninstall Workload Policy Manager\n")
 	fmt.Printf("\t          --purge flag when supplied also deletes the existing WPM configuration\n")
