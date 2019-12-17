@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -41,12 +40,16 @@ var (
 	Time string = ""
 	// Branch holds the git build branch for the WPM binary
 	Branch string = ""
-	log           = commLog.GetDefaultLogger()
-	secLog        = commLog.GetSecurityLogger()
+	// GitHash holds the commit hash for the WPM binary
+	GitHash = ""
+	// GitCommitDate holds the git commit date for the WPM binary
+	GitCommitDate string = ""
+	log                  = commLog.GetDefaultLogger()
+	secLog               = commLog.GetSecurityLogger()
 )
 
 func printVersion() {
-	fmt.Printf("Version %s\nBuild %s at %s\n", Version, Branch, Time)
+	fmt.Printf("Workload Policy Manager Version %s\nBuild %s at %s - %s\n", Version, Branch, Time, GitHash)
 }
 
 func main() {
@@ -62,10 +65,9 @@ func main() {
 		return
 	}
 
-	isStdOut := false
-	isWLSConsoleEnabled := os.Getenv(consts.WPMConsoleEnableEnv)
-	if isWLSConsoleEnabled == "true" {
-		isStdOut = true
+	// force all args to lowercase
+	for i, x := range args {
+		args[i] = strings.ToLower(x)
 	}
 
 	switch arg := strings.ToLower(args[0]); arg {
@@ -79,7 +81,7 @@ func main() {
 		}
 
 		// Set log configurations
-		err = config.LogConfiguration(isStdOut, true)
+		err = config.LogConfiguration(false, true)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 		}
@@ -92,7 +94,7 @@ func main() {
 		}
 
 		if len(args) >= 2 &&
-			args[1] != "CreateEnvelopeKey" &&
+			args[1] != "createenvelopekey" &&
 			args[1] != "download_ca_cert" &&
 			args[1] != "download_cert" &&
 			args[1] != "all" {
@@ -100,10 +102,19 @@ func main() {
 			os.Exit(1)
 		}
 
-		if len(args) > 1 {
-			flags = args[2:]
-			if args[1] == "download_cert" && len(args) > 2 {
-				flags = args[3:]
+		if len(args) > 2 {
+			// check if flavor-signing cert type was specified for download
+			if args[1] == "download_cert" {
+				if args[2] != "flavor-signing" {
+					fmt.Println("Invalid cert type provided for download_cert setup task: Only flavor-signing cert type is supported. Aborting.")
+					os.Exit(1)
+				} else if len(args) > 3 {
+					// flags will be post the flavor-signing arg
+					flags = args[3:]
+				}
+			} else {
+				// flags for arguments
+				flags = args[2:]
 			}
 		}
 
@@ -180,7 +191,7 @@ func main() {
 
 	case "create-image-flavor":
 		// Set log configurations
-		err := config.LogConfiguration(isStdOut, true)
+		err := config.LogConfiguration(config.Configuration.LogEnableStdout, true)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 			log.Tracef("%+v", err)
@@ -242,7 +253,7 @@ func main() {
 
 	case "create-container-image-flavor":
 		// Set log configurations
-		err := config.LogConfiguration(isStdOut, true)
+		err := config.LogConfiguration(config.Configuration.LogEnableStdout, true)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 		}
@@ -323,7 +334,7 @@ func main() {
 		}
 
 	case "unwrap-key":
-		err := config.LogConfiguration(isStdOut, true)
+		err := config.LogConfiguration(config.Configuration.LogEnableStdout, true)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 		}
@@ -360,7 +371,7 @@ func main() {
 		fmt.Println(base64.StdEncoding.EncodeToString(unwrappedKey))
 
 	case "get-container-image-id":
-		err := config.LogConfiguration(isStdOut, true)
+		err := config.LogConfiguration(config.Configuration.LogEnableStdout, true)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error configuring logging.")
 		}
@@ -397,14 +408,6 @@ func main() {
 	}
 }
 
-func runCommand(cmd string, args []string) (string, error) {
-	log.Trace("main:runCommand() Entering")
-	defer log.Trace("main:runCommand() Leaving")
-
-	out, err := exec.Command(cmd, args...).Output()
-	return string(out), err
-}
-
 func usage() {
 	log.Trace("main:usage() Entering")
 	defer log.Trace("main:usage() Leaving")
@@ -436,27 +439,29 @@ func usage() {
 	fmt.Printf("\nsetup command usage: setup [tasklist...]\n")
 	fmt.Printf("\t<tasklist>-space separated list of tasks\n")
 	fmt.Printf("\tSupported setup tasks:\n")
-	fmt.Printf("\t\tall     Runs all the setup tasks required in the right order\n")
+	fmt.Printf("\t\tall     Runs all the setup tasks required in the right order\n\n")
 	fmt.Printf("\t\tCreateEnvelopeKey [--force]   Creates the key pair required to securely transfer key from KMS\n")
-	fmt.Printf("\t\t        - Option [--force] overwrites existing envelope keypairs\n")
+	fmt.Printf("\t\t        - Option [--force] overwrites existing envelope keypairs\n\n")
+
 	fmt.Printf("\t\tdownload_ca_cert [--force]\n")
 	fmt.Printf("\t\t        Download CMS root CA certificate\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads new root CA cert\n")
 	fmt.Printf("\t\t        Required env variables are:\n")
-	fmt.Printf("\t\t        - CMS_BASE_URL=<url> for CMS API URL\n")
-	fmt.Printf("\t\t        - CMS_TLS_CERT_SHA384=<sha384ForCMSTLSCert>\n")
+	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
+	fmt.Printf("\t\t        - Environment variable CMS_TLS_CERT_SHA384=<sha384ForCMSTLSCert>\n\n")
+
 	fmt.Printf("\t\tdownload_cert Flavor-Signing [--force]\n")
 	fmt.Printf("\t\t        Generates Key pair and CSR, gets it signed from CMS\n")
 	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads newly signed Flavor Signing cert\n")
 	fmt.Printf("\t\t        Required env variables are:\n")
-	fmt.Printf("\t\t        - CMS_BASE_URL=<url> for CMS API URL\n")
-	fmt.Printf("\t\t        - BEARER_TOKEN=<token> for downloading signed certificate from CMS\n")
+	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
+	fmt.Printf("\t\t        - Environment variable BEARER_TOKEN=<token> for downloading signed certificate from CMS\n")
 	fmt.Printf("\t\t        Optional env variables are:\n")
 	fmt.Printf("\t\t        - Environment variable KEY_PATH=<key_path> Path of file where Flavor Signing key needs to be stored\n")
 	fmt.Printf("\t\t        - Environment variable CERT_PATH=<cert_path> Path of file/directory where Flavor Signing certificate needs to be stored\n")
 
 	fmt.Printf("\nuninstall [--purge]     Uninstall Workload Policy Manager\n")
-	fmt.Printf("\t          --purge flag when supplied also deletes the existing WPM configuration\n")
+	fmt.Printf("\t\t         --purge flag when supplied also deletes the existing WPM configuration\n")
 
 	fmt.Printf("\nhelp        Displays this help information\n")
 

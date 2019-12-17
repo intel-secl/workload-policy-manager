@@ -10,6 +10,7 @@ import (
 	"intel/isecl/wpm/consts"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -48,7 +49,8 @@ var Configuration struct {
 	}
 	LogLevel          string
 	LogEntryMaxLength int
-	ConfigComplete    bool
+	LogEnableStdout   bool
+	ConfigComplete bool
 }
 
 var LogWriter io.Writer
@@ -192,6 +194,15 @@ func SaveConfiguration(c csetup.Context) error {
 		log.Info("config/config:SaveConfiguration() Invalid Log Entry Max Length defined (should be > 100), " +
 			"using default value")
 		Configuration.LogEntryMaxLength = consts.DefaultLogEntryMaxlength
+	}
+
+	Configuration.LogEnableStdout = false
+	logEnableStdout, err := c.GetenvString(consts.WPMConsoleEnableEnv, "Workload Policy Manager enable standard output")
+	if err == nil && logEnableStdout != "" {
+		Configuration.LogEnableStdout, err = strconv.ParseBool(logEnableStdout)
+		if err != nil {
+			log.Info("config/config:SaveConfiguration() Error while parsing the variable ", consts.WPMConsoleEnableEnv, " setting to default value false")
+		}
 	}
 
 	if len(missingEnvVars) > 0 {

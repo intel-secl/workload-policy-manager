@@ -88,7 +88,7 @@ for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN $WPM_CA_CONFIGURATION $WP
   chmod 700 $directory
 done
 
-# if an existing wpm is already running, stop it while we install
+# if WPM is already installed then exit
 existing_wpm=$(which wpm 2>/dev/null)
 if [ -f "$existing_wpm" ]; then
   echo_success "Workload Policy Manager is already installed."
@@ -97,7 +97,6 @@ fi
 
 cp -f $APPLICATION $WPM_BIN/wpm
 ln -sfT $WPM_BIN/wpm $WPM_SYMLINK
-echo_success "WPM installation complete"
 
 auto_install() {
   local component=${1}
