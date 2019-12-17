@@ -1,18 +1,18 @@
 image: golang:1.12
 
 before_script:
-  - echo "Acquire::http::Proxy \"http://proxy-us.intel.com:911\";" >> /etc/apt/apt.conf
-  - echo "Acquire::https::Proxy \"http://proxy-us.intel.com:911\";" >> /etc/apt/apt.conf
-  - git config --global http.proxy "http://proxy-us.intel.com:911"
-  - git config --global http."https://gitlab.devtools.intel.com".proxy ""
-  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.devtools.intel.com".insteadOf "https://gitlab.devtools.intel.com"
+  - echo "Acquire::http::Proxy \"${HTTP_PROXY}\";" >> /etc/apt/apt.conf
+  - echo "Acquire::https::Proxy \"${HTTPS_PROXY}\";" >> /etc/apt/apt.conf
+  - git config --global http.proxy "${HTTP_PROXY}"
+  - git config --global http."https://${GITLAB_SERVER}".proxy ""
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@${GITLAB_SERVER}".insteadOf "https://${GITLAB_SERVER}"
   - mkdir -p ~/.ssh
   - chmod 700 ~/.ssh
   - cd $CI_PROJECT_DIR
 
 variables:
-  HTTPS_PROXY: http://proxy-us.intel.com:911
-  no_proxy: ".intel.com"
+  HTTPS_PROXY: "${HTTPS_PROXY}"
+  no_proxy: "${NO_PROXY}"
 
 stages:
   - build
