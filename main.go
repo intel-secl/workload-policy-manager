@@ -65,11 +65,6 @@ func main() {
 		return
 	}
 
-	// force all args to lowercase
-	for i, x := range args {
-		args[i] = strings.ToLower(x)
-	}
-
 	switch arg := strings.ToLower(args[0]); arg {
 	case "setup":
 		flags := args
@@ -104,8 +99,8 @@ func main() {
 
 		if len(args) > 2 {
 			// check if flavor-signing cert type was specified for download
-			if args[1] == "download_cert" {
-				if args[2] != "flavor-signing" {
+			if strings.ToLower(args[1]) == "download_cert" {
+				if strings.ToLower(args[2]) != "flavor-signing" {
 					fmt.Println("Invalid cert type provided for download_cert setup task: Only flavor-signing cert type is supported. Aborting.")
 					os.Exit(1)
 				} else if len(args) > 3 {
