@@ -1,10 +1,10 @@
 #!/bin/bash
 
-git clone ssh://git@gitlab.devtools.intel.com:29418/sst/isecl/secure-docker-daemon.git 2>/dev/null
+git clone https://github.com/intel-secl/secure-docker-daemon.git 2>/dev/null
 
 cd secure-docker-daemon
 git fetch
-git checkout v1.0/develop
+git checkout v1.6
 git pull
 
 #Build secure docker daemon
