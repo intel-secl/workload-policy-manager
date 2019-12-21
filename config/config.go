@@ -153,7 +153,7 @@ func SaveConfiguration(c csetup.Context) error {
 		log.Errorf("config/config.go:SaveConfiguration() Environment variable %s required - but not set", consts.ServiceUsername)
 	}
 
-	servicePassword, err := c.GetenvString(consts.ServicePassword, "WPM AAS Password")
+	servicePassword, err := c.GetenvSecret(consts.ServicePassword, "WPM AAS Password")
 	if err == nil && servicePassword != "" {
 		Configuration.Wpm.Password = servicePassword
 		log.Infof("config/config.go:SaveConfiguration() %s config updated\n", consts.ServicePassword)
