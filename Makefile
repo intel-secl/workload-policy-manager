@@ -1,9 +1,9 @@
-VERSION := v1.0
 GITTAG := $(shell git describe --tags --abbrev=0 2> /dev/null)
 GITCOMMIT := $(shell git describe --always)
 GITCOMMITDATE := $(shell git log -1 --date=short --pretty=format:%cd)
 GITBRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 TIMESTAMP := $(shell date --iso=seconds)
+VERSION := $(or ${GITTAG}, v0.0.0)
 
 
 .PHONY: workload-policy-manager installer docker all clean
