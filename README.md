@@ -79,3 +79,6 @@ make installer
 # Links
 
 https://01.org/intel-secl/
+
+*Intel® Security Libraries for Data Center v1.6 Release Update:
+Due to a recent change in an externally supported repository, namely Docker github; customers may see issues in compiling the latest released version of Intel® SecL-DC v1.6. Intel is working on a resolution and we plan to provide a minor release to address this issue shortly. Regular update to this communication will be shared to customers accordingly.
