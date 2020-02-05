@@ -392,10 +392,10 @@ func main() {
 			log.Tracef("%+v", err)
 		}
 
-	case "help", "-help", "--help":
+	case "-h", "--help":
 		usage()
 
-	case "--version", "-v", "version", "-version":
+	case "--version", "-v":
 		printVersion()
 
 	default:
@@ -407,60 +407,65 @@ func usage() {
 	log.Trace("main:usage() Entering")
 	defer log.Trace("main:usage() Leaving")
 
-	fmt.Printf("Workload Policy Manager\n")
-	fmt.Printf("usage : %s <command> [<args>]\n\n", os.Args[0])
-	fmt.Printf("Available commands:\n")
-	fmt.Printf("\t--help           \n")
-	fmt.Printf("\t--version\n")
-	fmt.Printf("\tcreate-image-flavor\n")
-	fmt.Printf("\tcreate-container-image-flavor\n")
-	fmt.Printf("\tget-container-image-id\n")
-	fmt.Printf("\tcreate-software-flavor\n")
-	fmt.Printf("\tunwrap-key\n")
-	fmt.Printf("\tsetup\n")
-	fmt.Printf("\tuninstall\n")
-
-	fmt.Printf("\ncreate-image-flavor     Create VM image flavors and encrypt the image\n")
+	fmt.Fprintln(os.Stdout, "Usage:")
+	fmt.Fprintln(os.Stdout, "    wpm <command> [arguments]")
+	fmt.Fprintln(os.Stdout, "")
+	fmt.Fprintln(os.Stdout, "Available Commands:")
+	fmt.Fprintln(os.Stdout, "    -h|--help                        Show this help message")
+	fmt.Fprintln(os.Stdout, "    -v|--version                     Print version/build information")
+	fmt.Fprintln(os.Stdout, "    create-image-flavor              Create VM image flavors and encrypt the image")
+	fmt.Fprintln(os.Stdout, "    create-container-image-flavor    Create container image flavors and encrypt the container image")
+	fmt.Fprintln(os.Stdout, "    get-container-image-id           Fetch the container image ID given the sha256 digest of the image")
+	fmt.Fprintln(os.Stdout, "    unwrap-key                       Unwraps the image encryption key fetched from KMS")
+	fmt.Fprintln(os.Stdout, "    uninstall [--purge]              Uninstall wpm. --purge option needs to be applied to remove configuration and data files")
+	fmt.Fprintln(os.Stdout, "    setup                            Run workload-policy-manager setup tasks")
+	fmt.Fprintln(os.Stdout, "")
 	imageFlavorUsage()
-
-	fmt.Printf("\ncreate-container-image-flavor     Create container image flavors and encrypt the container image\n")
+	fmt.Fprintln(os.Stdout, "")
 	containerFlavorUsage()
-
-	fmt.Printf("\nget-container-image-id [<sha256 of image id>]     - Fetch the container image ID given the sha256 of the image\n")
-
-	fmt.Printf("\nunwrap-key -i in     Unwraps the image encryption key fetched from KMS\n")
-	fmt.Printf("\t  -i, --in     wrapped key file path\n")
-
-	fmt.Printf("\nsetup command usage: setup [tasklist...]\n")
-	fmt.Printf("\t<tasklist>-space separated list of tasks\n")
-	fmt.Printf("\tSupported setup tasks:\n")
-	fmt.Printf("\t\tall     Runs all the setup tasks required in the right order\n\n")
-	fmt.Printf("\t\tCreateEnvelopeKey [--force]   Creates the key pair required to securely transfer key from KMS\n")
-	fmt.Printf("\t\t        - Option [--force] overwrites existing envelope keypairs\n\n")
-
-	fmt.Printf("\t\tdownload_ca_cert [--force]\n")
-	fmt.Printf("\t\t        Download CMS root CA certificate\n")
-	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads new root CA cert\n")
-	fmt.Printf("\t\t        Required env variables are:\n")
-	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
-	fmt.Printf("\t\t        - Environment variable CMS_TLS_CERT_SHA384=<sha384ForCMSTLSCert>\n\n")
-
-	fmt.Printf("\t\tdownload_cert Flavor-Signing [--force]\n")
-	fmt.Printf("\t\t        Generates Key pair and CSR, gets it signed from CMS\n")
-	fmt.Printf("\t\t        - Option [--force] overwrites any existing files, and always downloads newly signed Flavor Signing cert\n")
-	fmt.Printf("\t\t        Required env variables are:\n")
-	fmt.Printf("\t\t        - Environment variable CMS_BASE_URL=<url> for CMS API URL\n")
-	fmt.Printf("\t\t        - Environment variable BEARER_TOKEN=<token> for downloading signed certificate from CMS\n")
-	fmt.Printf("\t\t        Optional env variables are:\n")
-	fmt.Printf("\t\t        - Environment variable KEY_PATH=<key_path> Path of file where Flavor Signing key needs to be stored\n")
-	fmt.Printf("\t\t        - Environment variable CERT_PATH=<cert_path> Path of file/directory where Flavor Signing certificate needs to be stored\n")
-
-	fmt.Printf("\nuninstall [--purge]     Uninstall Workload Policy Manager\n")
-	fmt.Printf("\t\t         --purge flag when supplied also deletes the existing WPM configuration\n")
-
-	fmt.Printf("\nhelp        Displays this help information\n")
-
-	fmt.Printf("\nversion     Prints the build and version information\n")
+	fmt.Fprintln(os.Stdout, "")
+	fmt.Fprintln(os.Stdout, "usage: get-container-image-id [<sha256 digest of image>]")
+	fmt.Fprintln(os.Stdout, "")
+	fmt.Fprintln(os.Stdout, "usage: unwrap-key [-i |--in] <wrapped key file path>")
+	fmt.Fprintln(os.Stdout, "")
+	fmt.Fprintln(os.Stdout, "Setup command usage:     wpm setup [task] [--force]")
+	fmt.Fprintln(os.Stdout, "")
+	fmt.Fprintln(os.Stdout, "Available tasks for setup:")
+	fmt.Fprintln(os.Stdout, "   all                                         Runs all setup tasks")
+	fmt.Fprintln(os.Stdout, "                                               Required env variables:")
+	fmt.Fprintln(os.Stdout, "                                                   - get required env variables from all the setup tasks")
+	fmt.Fprintln(os.Stdout, "                                               Optional env variables:")
+	fmt.Fprintln(os.Stdout, "                                                   - get optional env variables from all the setup tasks")
+	fmt.Fprintln(os.Stdout, "")
+	fmt.Fprintln(os.Stdout, "   download_ca_cert                            Download CMS root CA certificate")
+	fmt.Fprintln(os.Stdout, "                                               - Option [--force] overwrites any existing files, and always downloads new root CA cert")
+	fmt.Fprintln(os.Stdout, "                                               Required env variables if WPM_NOSETUP=true or variable not set in config.yml:")
+	fmt.Fprintln(os.Stdout, "                                                   - KMS_API_URL=<url>                               : KMS API URL")
+	fmt.Fprintln(os.Stdout, "                                                   - AAS_API_URL=<url>                               : AAS API URL")
+	fmt.Fprintln(os.Stdout, "                                                   - WPM_SERVICE_USERNAME=<service username>         : WPM service username")
+	fmt.Fprintln(os.Stdout, "                                                   - WPM_SERVICE_PASSWORD=<service password>         : WPM service password")
+	fmt.Fprintln(os.Stdout, "                                               Required env variables specific to setup task are:")
+	fmt.Fprintln(os.Stdout, "                                                   - CMS_BASE_URL=<url>                              : for CMS API url")
+	fmt.Fprintln(os.Stdout, "                                                   - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>  : to ensure that WPM is talking to the right CMS instance")
+	fmt.Fprintln(os.Stdout, "")
+	fmt.Fprintln(os.Stdout, "   download_cert flavor-signing                Generates Key pair and CSR, gets it signed from CMS")
+	fmt.Fprintln(os.Stdout, "                                               - Option [--force] overwrites any existing files, and always downloads newly signed WPM Flavor Signing cert")
+	fmt.Fprintln(os.Stdout, "                                               Required env variables if WPM_NOSETUP=true or variable not set in config.yml:")
+	fmt.Fprintln(os.Stdout, "                                                   - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>  : to ensure that WPM is talking to the right CMS instance")
+	fmt.Fprintln(os.Stdout, "                                                   - KMS_API_URL=<url>                               : KMS API URL")
+	fmt.Fprintln(os.Stdout, "                                                   - AAS_API_URL=<url>                               : AAS API URL")
+	fmt.Fprintln(os.Stdout, "                                                   - WPM_SERVICE_USERNAME=<service username>         : WPM service username")
+	fmt.Fprintln(os.Stdout, "                                                   - WPM_SERVICE_PASSWORD=<service password>         : WPM service password")
+	fmt.Fprintln(os.Stdout, "                                               Required env variables specific to setup task are:")
+	fmt.Fprintln(os.Stdout, "                                                   - CMS_BASE_URL=<url>                       : for CMS API url")
+	fmt.Fprintln(os.Stdout, "                                                   - BEARER_TOKEN=<token>                     : for authenticating with CMS")
+	fmt.Fprintln(os.Stdout, "                                               Optional env variables specific to setup task are:")
+	fmt.Fprintln(os.Stdout, "                                                   - KEY_PATH=<key_path>                        : Path of file where Flavor-Signing key needs to be stored")
+	fmt.Fprintln(os.Stdout, "                                                   - CERT_PATH=<cert_path>                      : Path of file/directory where Flavor-Signing certificate needs to be stored")
+	fmt.Fprintln(os.Stdout, "                                                   - WPM_FLAVOR_SIGN_CERT_CN=<COMMON NAME>      : to override default specified in config")
+	fmt.Fprintln(os.Stdout, "")
+	fmt.Fprintln(os.Stdout, "   createenvelopekey                           Creates the key pair required to securely transfer key from KMS")
+	fmt.Fprintln(os.Stdout, "                                               - Option [--force] overwrites existing envelope key pairs")
 }
 
 func deleteFiles(filePath ...string) (errorFiles []string, err error) {
@@ -494,7 +499,7 @@ func imageFlavorUsage() {
 		"\t  -e, --encout    (optional) output encrypted image file path\n" +
 		"\t                  if not specified, encryption is skipped\n" +
 		"\t  -k, --key       (optional) existing key ID\n" +
-		"\t                  if not specified, a new key is generated\n")
+		"\t                  if not specified, a new key is generated")
 }
 
 //Usage command line usage string
@@ -518,6 +523,6 @@ func containerFlavorUsage() {
 		"\t  -s, --integrity-enforced        (optional) boolean parameter specifies if\n" +
 		"\t                                  container image should be signed\n" +
 		"\t  -n, --notary-server             (optional) specify notary server url\n" +
-		"\t  -o, --out-file                  (optional) specify output file path\n")
+		"\t  -o, --out-file                  (optional) specify output file path")
 
 }
