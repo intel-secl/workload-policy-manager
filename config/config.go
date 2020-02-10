@@ -47,6 +47,8 @@ var Configuration struct {
 		Username string
 		Password string
 	}
+	FlavorSigningKeyFile       string
+	FlavorSigningCertFile   string
 	LogLevel          string
 	LogEntryMaxLength int
 	LogEnableStdout   bool
@@ -160,6 +162,20 @@ func SaveConfiguration(c csetup.Context) error {
 	} else if Configuration.Wpm.Password == "" {
 		missingEnvVars = append(missingEnvVars, consts.ServicePassword)
 		log.Errorf("config/config.go:SaveConfiguration() Environment variable %s required - but not set", consts.ServicePassword)
+	}
+
+	flavorSigningKeyPath, err := c.GetenvString("KEY_PATH", "Path of file where flavor signing key needs to be stored")
+	if err == nil && flavorSigningKeyPath != "" {
+		Configuration.FlavorSigningKeyFile = flavorSigningKeyPath
+	} else if Configuration.FlavorSigningKeyFile == "" {
+		Configuration.FlavorSigningKeyFile = consts.FlavorSigningKeyPath
+	}
+
+	flavorSigningCertPath, err := c.GetenvString("CERT_PATH", "Path of file/directory where flavor signing certificate needs to be stored")
+	if err == nil && flavorSigningCertPath != "" {
+		Configuration.FlavorSigningCertFile = flavorSigningCertPath
+	} else if Configuration.FlavorSigningCertFile == "" {
+		Configuration.FlavorSigningCertFile = consts.FlavorSigningCertPath
 	}
 
 	certCommonName, err := c.GetenvString(consts.WpmFlavorSignCertCommonNameEnv, "Common Name")

@@ -149,8 +149,8 @@ func main() {
 				},
 				csetup.Download_Cert{
 					Flags:              flags,
-					KeyFile:            consts.FlavorSigningKeyPath,
-					CertFile:           consts.FlavorSigningCertPath,
+					KeyFile:            config.Configuration.FlavorSigningKeyFile,
+					CertFile:           config.Configuration.FlavorSigningCertFile,
 					KeyAlgorithm:       consts.DefaultKeyAlgorithm,
 					KeyAlgorithmLength: consts.DefaultKeyAlgorithmLength,
 					CmsBaseURL:         config.Configuration.Cms.BaseURL,
