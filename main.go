@@ -121,7 +121,7 @@ func main() {
 		}
 		err = installRunner.RunTasks("Configurer")
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error validating WPM configuration.")
+			fmt.Fprintf(os.Stderr, "Error validating WPM configuration: %s\n", err.Error())
 			log.WithError(err).Errorf("%s Error validating configuration: %s", commMsg.AppRuntimeErr, err.Error())
 			log.Tracef("%+v", err)
 			os.Exit(1)
