@@ -193,6 +193,7 @@ if [ "$WPM_WITH_CONTAINER_SECURITY" = "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" 
   systemctl stop docker
   mkdir -p $WPM_HOME/secure-docker-daemon/backup
   cp /usr/bin/docker $WPM_HOME/secure-docker-daemon/backup/
+  cp /etc/docker/daemon.json $WPM_HOME/secure-docker-daemon/backup/ 2>/dev/null
   chown -R root:root docker-daemon
   cp -f docker-daemon/docker /usr/bin/
   which /usr/bin/dockerd-ce 2>/dev/null

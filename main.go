@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -383,6 +384,12 @@ func main() {
 	case "uninstall":
 		config.LogConfiguration(false, false)
 		fmt.Println("Uninstalling WPM")
+		
+		_, err = exec.Command("ls", consts.OptDirPath+"secure-docker-daemon").Output()
+	        if err == nil {
+		        removeSecureDockerDaemon()
+	        } 
+
 		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
 			deleteFiles(consts.ConfigDirPath)
 		}
@@ -520,4 +527,12 @@ func containerFlavorUsage() {
 		"\t  -n, --notary-server             (optional) specify notary server url\n" +
 		"\t  -o, --out-file                  (optional) specify output file path\n")
 
+}
+
+func removeSecureDockerDaemon(){
+	fmt.Println("Uninstalling secure-docker-daemon")
+	_, err := exec.Command(consts.OptDirPath+"secure-docker-daemon/uninstall-secure-docker-daemon.sh").Output()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to uninstall secure-docker-daemon Error %s:", err.Error())
+	}
 }
