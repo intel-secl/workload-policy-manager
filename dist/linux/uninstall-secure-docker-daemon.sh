@@ -4,6 +4,7 @@
 systemctl stop docker.service
 cp -f /opt/workload-policy-manager/secure-docker-daemon/backup/dockerd /usr/bin/
 cp -f /opt/workload-policy-manager/secure-docker-daemon/backup/docker /usr/bin/
+rm -f /etc/docker/daemon.json
 cp -f /opt/workload-policy-manager/secure-docker-daemon/backup/daemon.json /etc/docker/ 2>/dev/null
 sed -i 's/^ExecStart=.*/ExecStart=\/usr\/bin\/dockerd\ \-H\ unix\:\/\/ /' /lib/systemd/system/docker.service
 systemctl daemon-reload
