@@ -11,10 +11,8 @@ require (
 	intel/isecl/lib/flavor v0.0.0
 )
 
-replace intel/isecl/lib/flavor => github.com/intel-secl/flavor v1.6.0
+replace intel/isecl/lib/flavor => gitlab.devtools.intel.com/sst/isecl/lib/flavor.git v2.0/develop
 
-replace intel/isecl/authservice => github.com/intel-secl/authservice v1.6.1
+replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common.git v2.0/develop
 
-replace intel/isecl/lib/common => github.com/intel-secl/common v1.6.1
-
-replace intel/isecl/lib/clients => github.com/intel-secl/clients v1.6.0
+replace intel/isecl/lib/clients => gitlab.devtools.intel.com/sst/isecl/lib/clients.git v2.0/develop
