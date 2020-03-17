@@ -60,8 +60,9 @@ WPM_HOME=${WPM_HOME:-/opt/${APPLICATION}}
 WPM_BIN=${WPM_BIN:-$WPM_HOME/bin}
 WPM_SYMLINK=${WPM_SYMLINK:-/usr/local/bin/wpm}
 WPM_CONFIGURATION=${WPM_CONFIGURATION:-/etc/${APPLICATION}}
-WPM_CA_CONFIGURATION=${WPM_CA_CONFIGURATION:-/etc/${APPLICATION}/cacerts/}
-WPM_CA_JWT_DIR=${WPM_CA_JWT_DIR:-/etc/${APPLICATION}/jwt/}
+WPM_CA_CONFIGURATION=${WPM_CA_CONFIGURATION:-/etc/${APPLICATION}/certs/trustedca}
+WPM_FLAVOR_SIGN_DIR=${WPM_CONFIGURATION}/certs/flavorsign
+WPM_KBS_ENVELOPKEY_DIR=${WPM_CONFIGURATION}/certs/kbs
 WPM_LOGS=${WPM_LOGS:-/var/log/${APPLICATION}}
 WPM_LOG_LEVEL=${WPM_LOG_LEVEL:-INFO}
 
@@ -78,7 +79,7 @@ fi
 
 echo_info "Creating application directories and assigning permissions...."
 # 8. create application directories (chown will be repeated near end of this script, after setup)
-for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN $WPM_CA_CONFIGURATION $WPM_CA_JWT_DIR; do
+for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN $WPM_CA_CONFIGURATION $WPM_FLAVOR_SIGN_DIR $WPM_KBS_ENVELOPKEY_DIR; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
   mkdir -p $directory
   if [ $? -ne 0 ]; then
