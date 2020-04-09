@@ -5,9 +5,9 @@
 package devtest
 
 import (
-	config "intel/isecl/wpm/config"
-	ci "intel/isecl/wpm/pkg/containerimageflavor"
-	i "intel/isecl/wpm/pkg/imageflavor"
+	config "intel/isecl/wpm/v2/config"
+	ci "intel/isecl/wpm/v2/pkg/containerimageflavor"
+	i "intel/isecl/wpm/v2/pkg/imageflavor"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

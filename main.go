@@ -10,17 +10,17 @@ import (
 	base64 "encoding/base64"
 	"flag"
 	"fmt"
-	csetup "intel/isecl/lib/common/setup"
-	"intel/isecl/lib/common/validation"
-	"intel/isecl/wpm/config"
-	"intel/isecl/wpm/consts"
+	csetup "intel/isecl/lib/common/v2/setup"
+	"intel/isecl/lib/common/v2/validation"
+	"intel/isecl/wpm/v2/config"
+	"intel/isecl/wpm/v2/consts"
 
 	"github.com/pkg/errors"
 
-	containerImageFlavor "intel/isecl/wpm/pkg/containerimageflavor"
-	imageFlavor "intel/isecl/wpm/pkg/imageflavor"
-	"intel/isecl/wpm/pkg/setup"
-	"intel/isecl/wpm/pkg/util"
+	containerImageFlavor "intel/isecl/wpm/v2/pkg/containerimageflavor"
+	imageFlavor "intel/isecl/wpm/v2/pkg/imageflavor"
+	"intel/isecl/wpm/v2/pkg/setup"
+	"intel/isecl/wpm/v2/pkg/util"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -28,8 +28,8 @@ import (
 	"strconv"
 	"strings"
 
-	commLog "intel/isecl/lib/common/log"
-	commMsg "intel/isecl/lib/common/log/message"
+	commLog "intel/isecl/lib/common/v2/log"
+	commMsg "intel/isecl/lib/common/v2/log/message"
 
 	"github.com/google/uuid"
 )

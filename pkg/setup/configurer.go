@@ -5,8 +5,8 @@
 package setup
 
 import (
-	csetup "intel/isecl/lib/common/setup"
-	"intel/isecl/wpm/config"
+	csetup "intel/isecl/lib/common/v2/setup"
+	"intel/isecl/wpm/v2/config"
 
 	"github.com/pkg/errors"
 )

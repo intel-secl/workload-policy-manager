@@ -14,15 +14,15 @@ import (
 	"crypto/x509"
 	"encoding/binary"
 	"encoding/pem"
-	"intel/isecl/lib/common/crypt"
+	"intel/isecl/lib/common/v2/crypt"
 	"io"
 	"io/ioutil"
 	"unsafe"
 
 	"github.com/pkg/errors"
 
-	cLog "intel/isecl/lib/common/log"
-	cMsg "intel/isecl/lib/common/log/message"
+	cLog "intel/isecl/lib/common/v2/log"
+	cMsg "intel/isecl/lib/common/v2/log/message"
 )
 
 var (

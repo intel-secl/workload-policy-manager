@@ -11,15 +11,15 @@
 
 ## System Requirements
 
-- RHEL 7.5/7.6
-- Epel 7 Repo
+- RHEL 8.1
+- Epel 8 Repo
 - Proxy settings if applicable
 
 ## Software requirements
 
 - git
 - makeself
-- `go` version >= `go1.12.12` & <= `go1.12.17`
+- `go` version >= `go1.12.1` & <= `go1.14.1`
 
 # Step By Step Build Instructions
 
@@ -31,11 +31,11 @@
 sudo yum install -y git wget makeself
 ```
 
-### Install `go` version >= `go1.12.2` & <= `go1.12.17`
-The `Workload Policy Manager` requires Go version 1.12.12 that has support for `go modules`. The build was validated with the latest version 1.12.17 of `go`. It is recommended that you use 1.12.17 version of `go`. You can use the following to install `go`.
+### Install `go` version >= `go1.12.2` & <= `go1.14.1`
+The `Workload Policy Manager` requires Go version 1.12.1 that has support for `go modules`. The build was validated with the latest version 1.14.1 of `go`. It is recommended that you use 1.14.1 version of `go`. You can use the following to install `go`.
 ```shell
-wget https://dl.google.com/go/go1.12.17.linux-amd64.tar.gz
-tar -xzf go1.12.17.linux-amd64.tar.gz
+wget https://dl.google.com/go/go1.14.1.linux-amd64.tar.gz
+tar -xzf go1.14.1.linux-amd64.tar.gz
 sudo mv go /usr/local
 export GOROOT=/usr/local/go
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
@@ -79,6 +79,3 @@ make installer
 # Links
 
 https://01.org/intel-secl/
-
-*Intel® Security Libraries for Data Center v1.6 Release Update:
-Due to a recent change in an externally supported repository, namely Docker github; customers may see issues in compiling the latest released version of Intel® SecL-DC v1.6. Intel is working on a resolution and we plan to provide a minor release to address this issue shortly. Regular update to this communication will be shared to customers accordingly.
