@@ -521,8 +521,9 @@ func containerFlavorUsage() {
 		"\t  -t, --tag                       (optional) container image tag name\n" +
 		"\t  -f, --docker-file               (optional) container file path\n" +
 		"\t                                  to build the container image\n" +
-		"\t  -d, --build-dir                 (optional) build directory to\n" +
-		"\t                                  build the container image\n" +
+		"\t  -d, --build-dir                 (optional) build directory to build the\n" +
+		"\t                                  container image. To be provided when container\n" +
+		"\t                                  file path [-f] is provided as parameter\n" +
 		"\t  -k, --key-id                    (optional) existing key ID\n" +
 		"\t                                  if not specified, a new key is generated\n" +
 		"\t  -e, --encryption-required       (optional) boolean parameter specifies if\n" +
