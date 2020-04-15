@@ -111,6 +111,12 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 					imageName, tag, wrappedKeyFile.Name(), dockerFilePath, buildDir))
 			_, err = cmd.CombinedOutput()
 			if err != nil {
+				if strings.Contains(fmt.Sprint(cmd.Stderr), "unknown flag: --imgcrypt-opt") {
+					log.Errorf("Failed to build container image: %s", fmt.Sprint(cmd.Stderr) )
+					return signedFlavor, errors.Wrap(errors.New("Secure Docker Daemon is not properly " +
+						"installed. Check logs for more details"),  "Unable to build container image with " +
+						"encryption")
+				}
 				return signedFlavor, errors.Wrap(err, "Unable to build container image with encryption")
 			}
 
