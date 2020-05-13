@@ -393,7 +393,7 @@ func main() {
 		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
 			deleteFiles(consts.ConfigDirPath)
 		}
-		errorFiles, err := deleteFiles(consts.WpmSymLink, consts.OptDirPath, consts.ConfigDirPath, consts.LogDirPath)
+		errorFiles, err := deleteFiles(consts.WpmSymLink, consts.OptDirPath, consts.LogDirPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error deleting files : %s\n", errorFiles)
 			log.Tracef("%+v", err)
