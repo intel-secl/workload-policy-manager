@@ -40,6 +40,7 @@ type KeyInfo struct {
 	TransferPolicy  string `json:"transfer_policy,omitempty"`
 	TransferLink    string `json:"transfer_link,omitempty"`
 	DigestAlgorithm string `json:"digest_algorithm,omitempty"`
+	UsagePolicy     string `json:"usage_policy,omitempty"`
 }
 
 // Error is a error struct that contains error information thrown by the actual KMS
