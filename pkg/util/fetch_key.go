@@ -103,7 +103,7 @@ func FetchKeyForAssetTag(keyID string, assetTag string) ([]byte, error) {
 	//Marshall to a JSON string
 	keyJSON, err := json.Marshal(retrunkeyInfo)
 	if err != nil {
-		return keyJSON, errors.Wrap(err, "Error while marshalling key info: ")
+		return nil, errors.Wrap(err, "Error while marshalling key info: ")
 	}
 
 	log.Info("pkg/util:FetchKeyForAssetTag() Successfully wrote image flavor to file")
