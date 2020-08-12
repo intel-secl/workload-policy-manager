@@ -6,7 +6,7 @@ TIMESTAMP := $(shell date --iso=seconds)
 VERSION := $(or ${GITTAG}, v0.0.0)
 
 
-.PHONY: workload-policy-manager installer docker all clean
+.PHONY: workload-policy-manager wpm installer all clean
 
 workload-policy-manager:
 	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X main.Version=$(VERSION) -X main.Branch=$(GITBRANCH) -X main.Time=$(TIMESTAMP) -X main.GitHash=$(GITCOMMIT)  -X main.GitCommitDate=$(GITCOMMITDATE)"  -o out/workload-policy-manager
@@ -24,7 +24,15 @@ installer: workload-policy-manager
 	chmod +x out/wpm/workload-policy-manager
 	makeself out/wpm out/wpm-$(VERSION).bin "Workload Policy Manager $(VERSION)" ./install.sh
 
+installer-no-docker: workload-policy-manager
+	mkdir -p out/wpm
+	cp dist/linux/install.sh out/wpm/install.sh && chmod +x out/wpm/install.sh
+	cp out/workload-policy-manager out/wpm/workload-policy-manager
+	chmod +x out/wpm/workload-policy-manager
+	makeself out/wpm out/wpm-$(VERSION).bin "Workload Policy Manager $(VERSION)" ./install.sh
+
 all: installer
+wpm: workload-policy-manager
 
 clean:
 	rm -rf out/

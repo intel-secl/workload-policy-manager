@@ -40,7 +40,7 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 
 	var err error
 	var wrappedKey []byte
-	var keyURLString string
+	var keyUrlString string
 	encRequired := true
 	imageFilePath := inputImageFilePath
 
@@ -69,7 +69,7 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 	//Encrypt the image with the key
 	if encRequired {
 		// fetch the key to encrypt the image
-		wrappedKey, keyURLString, err = util.FetchKey(keyID)
+		wrappedKey, keyUrlString, err = util.FetchKey(keyID, "")
 		// encrypt the image with key retrieved from KBS
 		err = util.Encrypt(inputImageFilePath, consts.EnvelopePrivatekeyLocation, outputEncImageFilePath, wrappedKey)
 		if err != nil {
@@ -88,7 +88,7 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 	digest := sha512.Sum384([]byte(imageFile))
 
 	//Create image flavor
-	imageFlavor, err := flavor.GetImageFlavor(flavorLabel, encRequired, keyURLString, base64.StdEncoding.EncodeToString(digest[:]))
+	imageFlavor, err := flavor.GetImageFlavor(flavorLabel, encRequired, keyUrlString, base64.StdEncoding.EncodeToString(digest[:]))
 	if err != nil {
 		return "", errors.Wrap(err, "Error creating image flavor: "+err.Error())
 	}

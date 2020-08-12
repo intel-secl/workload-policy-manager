@@ -247,6 +247,43 @@ func main() {
 			fmt.Println(imageFlavor)
 		}
 
+	case "fetch-key":
+		// Set log configurations
+		err := config.LogConfiguration(config.Configuration.LogEnableStdout, true)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error configuring logging.")
+			log.Tracef("%+v", err)
+		}
+
+		keyID := flag.String("k", "", "existing key ID")
+		flag.StringVar(keyID, "key", "", "existing key ID")
+		assetTag := flag.String("t", "", "asset tags associated with the new key")
+		flag.StringVar(assetTag, "asset-tag", "", "asset tags associated with the new key")
+		flag.Usage = func() { fetchKeyUsage() }
+		flag.CommandLine.Parse(os.Args[2:])
+
+		//If the key ID is specified, make sure it's a valid UUID
+		if len(strings.TrimSpace(*keyID)) > 0 {
+			if validatekeyIDErr := validation.ValidateUUIDv4(*keyID); validatekeyIDErr != nil {
+				fmt.Fprintln(os.Stderr, "Error creating VM image flavor: Invalid Key UUID format")
+				log.WithError(validatekeyIDErr).Errorf("main:main() %s : Error creating VM image flavor: Invalid UUID - %s\n", commMsg.InvalidInputBadParam, *keyID)
+				log.Tracef("%+v", validatekeyIDErr)
+				imageFlavorUsage()
+				os.Exit(1)
+			}
+		}
+
+		keyInfo, err := util.FetchKeyForAssetTag(*keyID, *assetTag)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching key: %s\n", err.Error())
+			log.WithError(err).Errorf("main:main() %s - Error fetching: %s\n", commMsg.AppRuntimeErr, err.Error())
+			log.Tracef("%+v", err)
+			os.Exit(1)
+		}
+		if len(keyInfo) > 0 {
+			fmt.Println(string(keyInfo))
+		}
+
 	case "create-container-image-flavor":
 		// Set log configurations
 		err := config.LogConfiguration(config.Configuration.LogEnableStdout, true)
@@ -384,11 +421,11 @@ func main() {
 	case "uninstall":
 		config.LogConfiguration(false, false)
 		fmt.Println("Uninstalling WPM")
-		
+
 		_, err = exec.Command("ls", consts.OptDirPath+"secure-docker-daemon").Output()
-	        if err == nil {
-		        removeSecureDockerDaemon()
-	        } 
+		if err == nil {
+			removeSecureDockerDaemon()
+		}
 
 		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
 			deleteFiles(consts.ConfigDirPath)
@@ -415,7 +452,7 @@ func usage() {
 	defer log.Trace("main:usage() Leaving")
 
 	fmt.Fprintln(os.Stdout, "Usage:")
-	fmt.Fprintln(os.Stdout, "    wpm <command> [arguments]")
+	fmt.Fprintf(os.Stdout, "    wpm <command> [arguments]\n 	")
 	fmt.Fprintln(os.Stdout, "")
 	fmt.Fprintln(os.Stdout, "Available Commands:")
 	fmt.Fprintln(os.Stdout, "    -h|--help                        Show this help message")
@@ -425,24 +462,26 @@ func usage() {
 	fmt.Fprintln(os.Stdout, "    get-container-image-id           Fetch the container image ID given the sha256 digest of the image")
 	fmt.Fprintln(os.Stdout, "    unwrap-key                       Unwraps the image encryption key fetched from KMS")
 	fmt.Fprintln(os.Stdout, "    uninstall [--purge]              Uninstall wpm. --purge option needs to be applied to remove configuration and data files")
-	fmt.Fprintln(os.Stdout, "    setup                            Run workload-policy-manager setup tasks")
+	fmt.Fprintf(os.Stdout, "    setup                            Run workload-policy-manager setup tasks\n")
 	fmt.Fprintln(os.Stdout, "")
 	imageFlavorUsage()
+	fmt.Fprintln(os.Stdout, "    fetch-key                        Fetch key from KMS")
+	fetchKeyUsage()
 	fmt.Fprintln(os.Stdout, "")
 	containerFlavorUsage()
 	fmt.Fprintln(os.Stdout, "")
-	fmt.Fprintln(os.Stdout, "usage: get-container-image-id [<sha256 digest of image>]")
+	fmt.Fprintf(os.Stdout, "usage: get-container-image-id [<sha256 digest of image>]\n")
 	fmt.Fprintln(os.Stdout, "")
-	fmt.Fprintln(os.Stdout, "usage: unwrap-key [-i |--in] <wrapped key file path>")
+	fmt.Fprintf(os.Stdout, "usage: unwrap-key [-i |--in] <wrapped key file path>\n")
 	fmt.Fprintln(os.Stdout, "")
-	fmt.Fprintln(os.Stdout, "Setup command usage:     wpm setup [task] [--force]")
+	fmt.Fprintf(os.Stdout, "Setup command usage:     wpm setup [task] [--force]\n")
 	fmt.Fprintln(os.Stdout, "")
 	fmt.Fprintln(os.Stdout, "Available tasks for setup:")
 	fmt.Fprintln(os.Stdout, "   all                                         Runs all setup tasks")
 	fmt.Fprintln(os.Stdout, "                                               Required env variables:")
 	fmt.Fprintln(os.Stdout, "                                                   - get required env variables from all the setup tasks")
 	fmt.Fprintln(os.Stdout, "                                               Optional env variables:")
-	fmt.Fprintln(os.Stdout, "                                                   - get optional env variables from all the setup tasks")
+	fmt.Fprintf(os.Stdout, "                                                   - get optional env variables from all the setup tasks\n")
 	fmt.Fprintln(os.Stdout, "")
 	fmt.Fprintln(os.Stdout, "   download_ca_cert                            Download CMS root CA certificate")
 	fmt.Fprintln(os.Stdout, "                                               - Option [--force] overwrites any existing files, and always downloads new root CA cert")
@@ -453,7 +492,7 @@ func usage() {
 	fmt.Fprintln(os.Stdout, "                                                   - WPM_SERVICE_PASSWORD=<service password>         : WPM service password")
 	fmt.Fprintln(os.Stdout, "                                               Required env variables specific to setup task are:")
 	fmt.Fprintln(os.Stdout, "                                                   - CMS_BASE_URL=<url>                              : for CMS API url")
-	fmt.Fprintln(os.Stdout, "                                                   - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>  : to ensure that WPM is talking to the right CMS instance")
+	fmt.Fprintf(os.Stdout, "                                                   - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>  : to ensure that WPM is talking to the right CMS instance\n")
 	fmt.Fprintln(os.Stdout, "")
 	fmt.Fprintln(os.Stdout, "   download_cert flavor-signing                Generates Key pair and CSR, gets it signed from CMS")
 	fmt.Fprintln(os.Stdout, "                                               - Option [--force] overwrites any existing files, and always downloads newly signed WPM Flavor Signing cert")
@@ -469,7 +508,7 @@ func usage() {
 	fmt.Fprintln(os.Stdout, "                                               Optional env variables specific to setup task are:")
 	fmt.Fprintln(os.Stdout, "                                                   - KEY_PATH=<key_path>                        : Path of file where Flavor-Signing key needs to be stored")
 	fmt.Fprintln(os.Stdout, "                                                   - CERT_PATH=<cert_path>                      : Path of file/directory where Flavor-Signing certificate needs to be stored")
-	fmt.Fprintln(os.Stdout, "                                                   - WPM_FLAVOR_SIGN_CERT_CN=<COMMON NAME>      : to override default specified in config")
+	fmt.Fprintf(os.Stdout, "                                                   - WPM_FLAVOR_SIGN_CERT_CN=<COMMON NAME>      : to override default specified in config\n")
 	fmt.Fprintln(os.Stdout, "")
 	fmt.Fprintln(os.Stdout, "   createenvelopekey                           Creates the key pair required to securely transfer key from KMS")
 	fmt.Fprintln(os.Stdout, "                                               - Option [--force] overwrites existing envelope key pairs")
@@ -510,6 +549,20 @@ func imageFlavorUsage() {
 }
 
 //Usage command line usage string
+func fetchKeyUsage() {
+	log.Trace("main:fetchKeyUsage() Entering")
+	defer log.Trace("main:fetchKeyUsage() Leaving")
+
+	fmt.Println("usage: wpm fetch-key [-k key]\n" +
+		"\t  -k, --key       (optional) existing key ID\n" +
+		"\t                  if not specified, a new key is generated\n" +
+		"\t  -t, --asset-tag (optional) asset tags associated with the new key\n" +
+		"\t                  tags are key:value separated by comma\n" +
+		"\t  -a, --asymmetric (optional) specify to use asymmetric encryption\n" +
+		"\t                  currently only supports RSA")
+}
+
+//Usage command line usage string
 func containerFlavorUsage() {
 	log.Trace("main:containerFlavorUsage() Entering")
 	defer log.Trace("main:containerFlavorUsage() Leaving")
@@ -535,9 +588,9 @@ func containerFlavorUsage() {
 
 }
 
-func removeSecureDockerDaemon(){
+func removeSecureDockerDaemon() {
 	fmt.Println("Uninstalling secure-docker-daemon")
-	_, err := exec.Command(consts.OptDirPath+"secure-docker-daemon/uninstall-secure-docker-daemon.sh").Output()
+	_, err := exec.Command(consts.OptDirPath + "secure-docker-daemon/uninstall-secure-docker-daemon.sh").Output()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to uninstall secure-docker-daemon Error %s:", err.Error())
 	}

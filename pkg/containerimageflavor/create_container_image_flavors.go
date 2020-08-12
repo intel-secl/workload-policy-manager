@@ -47,7 +47,7 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 
 	var err error
 	var wrappedKey []byte
-	var keyURLString string
+	var keyUrlString string
 	signedFlavor := ""
 
 	// set logger fields
@@ -81,13 +81,13 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 
 		//Encrypt the image with the key
 		if encryptionRequired {
-			wrappedKey, keyURLString, err = util.FetchKey(keyID)
+			wrappedKey, keyUrlString, err = util.FetchKey(keyID, "")
 			if err != nil {
 				return signedFlavor, errors.Wrap(err, "Error fetching KMS key")
 			}
-			// We infer the keyID from the keyURLString
+			// We infer the keyID from the keyUrlString
 			if keyID == "" {
-				keyID = strings.Split(strings.Split(keyURLString, "/transfer")[0], config.Configuration.Kms.APIURL+"keys/")[1]
+				keyID = strings.Split(strings.Split(keyUrlString, "/transfer")[0], config.Configuration.Kms.APIURL+"keys/")[1]
 			}
 
 			wrappedKeyFileName := "wrappedKey_" + keyID + "_"
@@ -142,7 +142,7 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 	}
 
 	//Create image flavor
-	containerImageFlavor, err := flavor.GetContainerImageFlavor(flavorLabel, encryptionRequired, keyURLString, integrityEnforced, notaryServerURL)
+	containerImageFlavor, err := flavor.GetContainerImageFlavor(flavorLabel, encryptionRequired, keyUrlString, integrityEnforced, notaryServerURL)
 	if err != nil {
 		return signedFlavor, errors.Wrap(err, "Error while creating image flavor: " + err.Error())
 	}
