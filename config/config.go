@@ -6,8 +6,8 @@ package config
 
 import (
 	"fmt"
-	csetup "intel/isecl/lib/common/v2/setup"
-	"intel/isecl/wpm/v2/consts"
+	csetup "intel/isecl/lib/common/v3/setup"
+	"intel/isecl/wpm/v3/consts"
 	"io"
 	"os"
 	"strconv"
@@ -15,8 +15,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	commLog "intel/isecl/lib/common/v2/log"
-	commLogInt "intel/isecl/lib/common/v2/log/setup"
+	commLog "intel/isecl/lib/common/v3/log"
+	commLogInt "intel/isecl/lib/common/v3/log/setup"
 
 	"github.com/sirupsen/logrus"
 

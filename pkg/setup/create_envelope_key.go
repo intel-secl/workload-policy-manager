@@ -11,9 +11,9 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	cLog "intel/isecl/lib/common/v2/log"
-	csetup "intel/isecl/lib/common/v2/setup"
-	"intel/isecl/wpm/v2/consts"
+	cLog "intel/isecl/lib/common/v3/log"
+	csetup "intel/isecl/lib/common/v3/setup"
+	"intel/isecl/wpm/v3/consts"
 
 	"os"
 

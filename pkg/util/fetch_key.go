@@ -7,9 +7,9 @@ package util
 import (
 	"encoding/base64"
 	"encoding/json"
-	config "intel/isecl/wpm/v2/config"
-	"intel/isecl/wpm/v2/consts"
-	kmsc "intel/isecl/wpm/v2/pkg/kmsclient"
+	config "intel/isecl/wpm/v3/config"
+	"intel/isecl/wpm/v3/consts"
+	kmsc "intel/isecl/wpm/v3/pkg/kmsclient"
 	"io/ioutil"
 	"net/url"
 	"regexp"

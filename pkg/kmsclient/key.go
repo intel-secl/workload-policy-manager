@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"intel/isecl/wpm/v2/pkg/httpclient"
+	"intel/isecl/wpm/v3/pkg/httpclient"
 	"io"
 	"net/http"
 	"net/url"

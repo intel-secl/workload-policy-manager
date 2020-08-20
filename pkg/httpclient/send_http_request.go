@@ -9,15 +9,15 @@ import (
 	"net/http"
 	"sync"
 
-	"intel/isecl/wpm/v2/config"
-	"intel/isecl/wpm/v2/consts"
+	"intel/isecl/wpm/v3/config"
+	"intel/isecl/wpm/v3/consts"
 
-	"intel/isecl/lib/clients/v2"
-	"intel/isecl/lib/clients/v2/aas"
+	"intel/isecl/lib/clients/v3"
+	"intel/isecl/lib/clients/v3/aas"
 
 	"github.com/pkg/errors"
 
-	cLog "intel/isecl/lib/common/v2/log"
+	cLog "intel/isecl/lib/common/v3/log"
 )
 
 var (

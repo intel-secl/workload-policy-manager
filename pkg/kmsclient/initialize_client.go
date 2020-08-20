@@ -5,11 +5,11 @@
 package kmsclient
 
 import (
-	"intel/isecl/lib/clients/v2"
-	config "intel/isecl/wpm/v2/config"
-	"intel/isecl/wpm/v2/consts"
+	"intel/isecl/lib/clients/v3"
+	config "intel/isecl/wpm/v3/config"
+	"intel/isecl/wpm/v3/consts"
 
-	cLog "intel/isecl/lib/common/v2/log"
+	cLog "intel/isecl/lib/common/v3/log"
 )
 
 var (
