@@ -35,4 +35,4 @@ all: installer
 wpm: workload-policy-manager
 
 clean:
-	rm -rf out/
+	rm -rf out/ secure-docker-daemon/
