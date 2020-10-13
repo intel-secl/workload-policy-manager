@@ -7,9 +7,10 @@ package main
 import (
 	"crypto/md5"
 	"crypto/x509/pkix"
-	base64 "encoding/base64"
+	"encoding/base64"
 	"flag"
 	"fmt"
+	"intel/isecl/lib/common/v3/exec"
 	csetup "intel/isecl/lib/common/v3/setup"
 	"intel/isecl/lib/common/v3/validation"
 	"intel/isecl/wpm/v3/config"
@@ -24,7 +25,6 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -422,9 +422,18 @@ func main() {
 		config.LogConfiguration(false, false)
 		fmt.Println("Uninstalling WPM")
 
-		_, err = exec.Command("ls", consts.OptDirPath+"secure-docker-daemon").Output()
+		_, err := os.Stat(consts.OptDirPath + "secure-docker-daemon")
 		if err == nil {
 			removeSecureDockerDaemon()
+
+			// restart docker daemon
+			if err == nil {
+				commandArgs := []string{"start", "docker"}
+				_, err = exec.ExecuteCommand("systemctl", commandArgs)
+				if err != nil {
+					fmt.Print("Error starting docker daemon post-uninstall. Refer dockerd logs for more information.")
+				}
+			}
 		}
 
 		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
@@ -569,7 +578,6 @@ func containerFlavorUsage() {
 
 	fmt.Println("usage: wpm create-container-image-flavor -i img-name [-t tag] [-f dockerFile] [-d build-dir] [-k keyId]\n" +
 		"                            [-e] [-s] [-n notaryServer] [-o out-file]\n" +
-
 		"\t  -i, --img-name                  container image name\n" +
 		"\t  -t, --tag                       (optional) container image tag name\n" +
 		"\t  -f, --docker-file               (optional) container file path\n" +
@@ -590,8 +598,11 @@ func containerFlavorUsage() {
 
 func removeSecureDockerDaemon() {
 	fmt.Println("Uninstalling secure-docker-daemon")
-	_, err := exec.Command(consts.OptDirPath + "secure-docker-daemon/uninstall-secure-docker-daemon.sh").Output()
+
+	commandArgs := []string{consts.OptDirPath + "secure-docker-daemon/uninstall-container-security-dependencies.sh"}
+
+	_, err := exec.ExecuteCommand("/bin/bash", commandArgs)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to uninstall secure-docker-daemon Error %s:", err.Error())
+		fmt.Fprintf(os.Stderr, "Error while removing secure-docker-daemon %s:", err.Error())
 	}
 }

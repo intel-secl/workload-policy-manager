@@ -86,7 +86,7 @@ for directory in $WPM_CONFIGURATION $WPM_LOGS $WPM_BIN $WPM_CA_CONFIGURATION $WP
     echo_failure "Cannot create directory: $directory"
     exit 1
   fi
-  chmod 700 $directory
+  chmod 700 "$directory"
 done
 
 # if WPM is already installed then exit
@@ -195,10 +195,13 @@ if [ "$WPM_WITH_CONTAINER_SECURITY" = "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" 
       fi
     fi
     echo "Installing secure docker daemon"
-    systemctl stop docker
+    systemctl stop docker.service
     mkdir -p $WPM_HOME/secure-docker-daemon/backup
     cp /usr/bin/docker $WPM_HOME/secure-docker-daemon/backup/
-    cp /etc/docker/daemon.json $WPM_HOME/secure-docker-daemon/backup/ 2>/dev/null
+    # backup config files
+    if [ -f "/etc/docker/daemon.json" ]; then
+      cp /etc/docker/daemon.json $WPM_HOME/secure-docker-daemon/backup
+    fi
     chown -R root:root docker-daemon
     cp -f docker-daemon/docker /usr/bin/
     which /usr/bin/dockerd-ce 2>/dev/null
@@ -209,11 +212,14 @@ if [ "$WPM_WITH_CONTAINER_SECURITY" = "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" 
       cp /usr/bin/dockerd-ce $WPM_HOME/secure-docker-daemon/backup/
       cp -f docker-daemon/dockerd-ce /usr/bin/dockerd-ce
     fi
+
+    # Replace existing daemon.json with the secureoverlay2 one
     mkdir -p /etc/docker
     cp daemon.json /etc/docker/
+
     echo "Restarting docker"
     systemctl daemon-reload
-    systemctl start docker
+    systemctl start docker.service
     cp uninstall-secure-docker-daemon.sh $WPM_HOME/secure-docker-daemon/
   fi
 fi
