@@ -70,6 +70,9 @@ func CreateImageFlavor(flavorLabel string, outputFlavorFilePath string, inputIma
 	if encRequired {
 		// fetch the key to encrypt the image
 		wrappedKey, keyUrlString, err = util.FetchKey(keyID, "")
+		if err != nil {
+			return "", errors.Wrap(err, "Fetch key failed: "+err.Error())
+		}
 		// encrypt the image with key retrieved from KBS
 		err = util.Encrypt(inputImageFilePath, consts.EnvelopePrivatekeyLocation, outputEncImageFilePath, wrappedKey)
 		if err != nil {
