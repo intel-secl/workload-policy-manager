@@ -599,9 +599,9 @@ func containerFlavorUsage() {
 func removeSecureDockerDaemon() {
 	fmt.Println("Uninstalling secure-docker-daemon")
 
-	commandArgs := []string{consts.OptDirPath + "secure-docker-daemon/uninstall-container-security-dependencies.sh"}
+	commandArgs := []string{consts.OptDirPath + "secure-docker-daemon/uninstall-secure-docker-daemon.sh"}
 
-	_, err := exec.ExecuteCommand("/bin/bash", commandArgs)
+	_, err := exec.ExecuteCommand("/bin/sh", commandArgs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error while removing secure-docker-daemon %s:", err.Error())
 	}
