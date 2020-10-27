@@ -94,22 +94,21 @@ func UnwrapKey(wrappedKey []byte, privateKeyLocation string) ([]byte, error) {
 	log.Trace("pkg/util/encrypt.go:UnwrapKey() Entering")
 	defer log.Trace("pkg/util/encrypt.go:UnwrapKey() Leaving")
 
-	var unwrappedKey []byte
 	privateKey, err := ioutil.ReadFile(privateKeyLocation)
 	if err != nil {
-		return unwrappedKey, errors.Wrap(err, "Error reading private envelope key file")
+		return nil, errors.Wrap(err, "Error reading private envelope key file")
 	}
 
 	privateKeyBlock, _ := pem.Decode(privateKey)
 	var pri *rsa.PrivateKey
 	pri, err = x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes)
 	if err != nil {
-		return unwrappedKey, errors.Wrap(err, "Error decoding private envelope key")
+		return nil, errors.Wrap(err, "Error decoding private envelope key")
 	}
 
-	decryptedKey, errDecrypt := rsa.DecryptOAEP(sha512.New384(), rand.Reader, pri, wrappedKey, nil)
-	if errDecrypt != nil {
-		return unwrappedKey, errors.Wrap(err, "Error while decrypting the key")
+	decryptedKey, err := rsa.DecryptOAEP(sha512.New384(), rand.Reader, pri, wrappedKey, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error while decrypting the key")
 	}
 
 	log.Info("pkg/util/encrypt.go:Encrypt() Successfully unwrapped key")

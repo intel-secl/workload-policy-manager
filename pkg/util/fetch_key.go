@@ -5,6 +5,7 @@
 package util
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"intel/isecl/wpm/v3/config"
 	"intel/isecl/wpm/v3/consts"
@@ -98,7 +99,12 @@ func FetchKey(keyID string, assetTag string) ([]byte, string, error) {
 	}
 	log.Info("pkg/util/fetch_key.go:FetchKey() Successfully retrieved key")
 	log.Debugf("pkg/util/fetch_key.go:FetchKey() %s", keyUrlString)
-	return []byte(keyValue.KeyData), keyUrlString, nil
+
+	wrappedKey, err := base64.StdEncoding.DecodeString(keyValue.KeyData)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "pkg/util/fetch_key.go:FetchKey() Error decoding the image encryption key")
+	}
+	return wrappedKey, keyUrlString, nil
 }
 
 //FetchKeyForAssetTag is used to create flavor of an encrypted image
