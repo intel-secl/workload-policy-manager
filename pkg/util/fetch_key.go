@@ -79,7 +79,7 @@ func FetchKey(keyID string, assetTag string) ([]byte, string, error) {
 
 	} else {
 		//Build the key URL, to be inserted later on when the image flavor is created
-		keyUrl, err := url.Parse(config.Configuration.Kms.APIURL + "keys/" + keyID + "/transfer")
+		keyUrl, err := url.Parse(config.Configuration.Kms.APIURL + "/keys/" + keyID + "/transfer")
 		if err != nil {
 			return nil, "", errors.Wrap(err, "Error building KMS key URL")
 		}

@@ -15,12 +15,13 @@ import (
 	cLog "intel/isecl/lib/common/v3/log"
 	"intel/isecl/lib/flavor/v3"
 	flavorUtil "intel/isecl/lib/flavor/v3/util"
-	"intel/isecl/wpm/v3/config"
 	"intel/isecl/wpm/v3/consts"
 	"intel/isecl/wpm/v3/pkg/util"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -87,7 +88,9 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 			}
 			// We infer the keyID from the keyUrlString
 			if keyID == "" {
-				keyID = strings.Split(strings.Split(keyUrlString, "/transfer")[0], config.Configuration.Kms.APIURL+"keys/")[1]
+				keyUrl, _ := url.Parse(keyUrlString)
+				re := regexp.MustCompile("(?i)([0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12})")
+				keyID = re.FindString(keyUrl.Path)
 			}
 
 			wrappedKeyFileName := "wrappedKey_" + keyID + "_"
