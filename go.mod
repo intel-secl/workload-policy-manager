@@ -12,9 +12,9 @@ require (
 	intel/isecl/lib/flavor/v3 v3.0.0
 )
 
-replace intel/isecl/lib/flavor/v3 => github.com/intel-secl/flavor/v3 v3.0.0
+replace intel/isecl/lib/flavor/v3 => github.com/intel-secl/flavor/v3 v3.1.0
 
-replace intel/isecl/lib/common/v3 => github.com/intel-secl/common/v3 v3.0.0
+replace intel/isecl/lib/common/v3 => github.com/intel-secl/common/v3 v3.1.0
 
 replace github.com/intel-secl/intel-secl/v3 => gitlab.devtools.intel.com/sst/isecl/intel-secl.git/v3 v3.2/develop
 
