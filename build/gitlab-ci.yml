@@ -17,6 +17,7 @@ variables:
 stages:
   - build
   - test
+  - scan
 
 test:
   stage: test
@@ -31,3 +32,54 @@ compile:
     - go
   script:
     - go build ./...
+
+Stylechecker:
+  stage: scan
+  only:
+     - merge_requests
+  image: golang:latest
+  tags:
+    - k8s
+  script:
+    - gofmt -l .
+    - gofmt -l . | wc -l
+
+checkmarx:
+  stage: scan
+  only:
+     - merge_requests
+  services:
+     - docker:dind
+  image:
+    name: 10.105.168.120:5000/checkmarx:isecl
+    entrypoint: ['']
+  tags:
+    - docker-checkmarx
+    #  /app/cx-flow.jar
+    # /home/CX/cx-flow.jar
+  script:
+    - cat ${CX_FLOW_CONFIG} > application.yml
+    - |
+      if [ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]; then 
+        java -jar  /app/cx-flow.jar --spring.config.location=./application.yml \
+          --scan \
+          --cx-team="${CHECKMARX_TEAM}" \
+          --cx-project="${CI_PROJECT_NAME}-${CI_COMMIT_REF_NAME}" \
+          --app="${CI_PROJECT_NAME}" \
+          --project-id=${CI_PROJECT_ID} \
+          --merge-id=${CI_MERGE_REQUEST_IID} \
+          --bug-tracker=GITLABMERGE \
+          --cx-flow.break-build=false \
+          --f=.
+      else
+        java -jar /app/cx-flow.jar --spring.config.location=./application.yml \
+          --scan \
+          --cx-team="${CHECKMARX_TEAM}" \
+          --cx-project="${CI_PROJECT_NAME}-${CI_COMMIT_REF_NAME}" \
+          --app="${CI_PROJECT_NAME}-${CI_COMMIT_REF_NAME}" \
+          --branch="${CI_COMMIT_REF_NAME}" \
+          --repo-name="${CI_PROJECT_NAME}" \
+          --namespace="${CI_PROJECT_NAMESPACE##*/}" \
+          --cx-flow.break-build=false \
+          --f=.
+      fi
