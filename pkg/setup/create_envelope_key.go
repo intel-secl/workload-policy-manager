@@ -82,7 +82,12 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 			fmt.Fprintf(os.Stderr, "I/O error while saving private key file")
 			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() I/O error while saving private key file")
 		}
-		defer privateKeyFile.Close()
+		defer func() {
+			derr := privateKeyFile.Close()
+			if derr != nil {
+				fmt.Fprintf(os.Stderr, "Error while closing file" + derr.Error())
+			}
+		}()
 		err = pem.Encode(privateKeyFile, privateKey)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "I/O error while encoding private key file")
@@ -107,7 +112,12 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 			fmt.Fprintf(os.Stderr, "I/O error while encoding public envelope key file")
 			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while creating a new file. ")
 		}
-		defer publicKeyFile.Close()
+		defer func() {
+			derr := publicKeyFile.Close()
+			if derr != nil {
+				fmt.Fprintf(os.Stderr, "Error while closing file" + derr.Error())
+			}
+		}()
 
 		err = pem.Encode(publicKeyFile, publicKeyInPem)
 		if err != nil {

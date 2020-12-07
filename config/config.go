@@ -61,8 +61,13 @@ func init() {
 	// load from config
 	file, err := os.Open(consts.ConfigFilePath)
 	if err == nil {
-		defer file.Close()
-		yaml.NewDecoder(file).Decode(&Configuration)
+		defer func() {
+			derr := file.Close()
+			if derr != nil {
+				fmt.Fprintf(os.Stderr, "Error while closing file" + derr.Error())
+			}
+		}()
+		err = yaml.NewDecoder(file).Decode(&Configuration)
 	}
 	LogWriter = os.Stdout
 }
@@ -73,7 +78,12 @@ func Save() error {
 	defer log.Trace("config/config:Save() Leaving")
 
 	file, err := os.OpenFile(consts.ConfigFilePath, os.O_RDWR, 0)
-	defer file.Close()
+	defer func() {
+		derr := file.Close()
+		if derr != nil {
+			fmt.Fprintf(os.Stderr, "Error while closing file" + derr.Error())
+		}
+	}()
 	if err != nil {
 		// we have an error
 		if os.IsNotExist(err) {

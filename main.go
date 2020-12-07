@@ -204,7 +204,10 @@ func main() {
 		keyID := flag.String("k", "", "existing key ID")
 		flag.StringVar(keyID, "key", "", "existing key ID")
 		flag.Usage = func() { imageFlavorUsage() }
-		flag.CommandLine.Parse(os.Args[2:])
+		err = flag.CommandLine.Parse(os.Args[2:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing arguments: %s\n", err.Error())
+		}
 
 		if len(strings.TrimSpace(*flavorLabel)) <= 0 || len(strings.TrimSpace(*inputImageFilePath)) <= 0 {
 			fmt.Fprintln(os.Stderr, "Error creating VM image flavor: Missing arguments Flavor label and image file path.")
@@ -260,7 +263,10 @@ func main() {
 		assetTag := flag.String("t", "", "asset tags associated with the new key")
 		flag.StringVar(assetTag, "asset-tag", "", "asset tags associated with the new key")
 		flag.Usage = func() { fetchKeyUsage() }
-		flag.CommandLine.Parse(os.Args[2:])
+		err = flag.CommandLine.Parse(os.Args[2:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing arguments: %s\n", err.Error())
+		}
 
 		//If the key ID is specified, make sure it's a valid UUID
 		if len(strings.TrimSpace(*keyID)) > 0 {
@@ -310,8 +316,10 @@ func main() {
 		outputFlavorFilePath := flag.String("o", "", "output flavor file path")
 		flag.StringVar(outputFlavorFilePath, "out-file", "", "output flavor file path")
 		flag.Usage = func() { containerFlavorUsage() }
-		flag.CommandLine.Parse(os.Args[2:])
-
+		err = flag.CommandLine.Parse(os.Args[2:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing arguments: %s\n", err.Error())
+		}
 		if len(strings.TrimSpace(*imageName)) <= 0 {
 			fmt.Println("Flavor label and image file path are required arguments.")
 			containerFlavorUsage()
@@ -374,7 +382,10 @@ func main() {
 
 		wrappedKeyFilePath := flag.String("i", "", "wrapped key file path")
 		flag.StringVar(wrappedKeyFilePath, "in", "", "wrapped key file path")
-		flag.CommandLine.Parse(os.Args[2:])
+		err = flag.CommandLine.Parse(os.Args[2:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing arguments: %s\n", err.Error())
+		}
 
 		// validate input strings
 		inputArr := []string{*wrappedKeyFilePath}
@@ -419,7 +430,10 @@ func main() {
 		fmt.Println(imageUUID)
 
 	case "uninstall":
-		config.LogConfiguration(false, false)
+		err = config.LogConfiguration(false, false)
+		if err != nil {
+			fmt.Print("Error configuring logs")
+		}
 		fmt.Println("Uninstalling WPM")
 
 		_, err := os.Stat(consts.OptDirPath + "secure-docker-daemon")
@@ -437,7 +451,11 @@ func main() {
 		}
 
 		if len(args) > 1 && strings.ToLower(args[1]) == "--purge" {
-			deleteFiles(consts.ConfigDirPath)
+			errorFiles, err := deleteFiles(consts.ConfigDirPath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error deleting files : %s\n", errorFiles)
+				log.Tracef("%+v", err)
+			}
 		}
 		errorFiles, err := deleteFiles(consts.WpmSymLink, consts.OptDirPath, consts.LogDirPath)
 		if err != nil {
