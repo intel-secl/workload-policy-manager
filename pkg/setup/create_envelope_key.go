@@ -77,7 +77,7 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 			Bytes: x509.MarshalPKCS1PrivateKey(keyPair),
 		}
 
-		privateKeyFile, err := os.Create(consts.EnvelopePrivatekeyLocation)
+		privateKeyFile, err := os.OpenFile(consts.EnvelopePrivatekeyLocation, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "I/O error while saving private key file")
 			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() I/O error while saving private key file")
@@ -107,7 +107,7 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 			Bytes: pubkeyBytes,
 		}
 
-		publicKeyFile, err := os.Create(consts.EnvelopePublickeyLocation)
+		publicKeyFile, err := os.OpenFile(consts.EnvelopePublickeyLocation, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "I/O error while encoding public envelope key file")
 			return errors.Wrap(err, "pkg/setup/create_envelope_key.go:Run() Error while creating a new file. ")

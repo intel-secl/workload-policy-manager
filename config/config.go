@@ -65,7 +65,7 @@ func init() {
 			derr := file.Close()
 			if derr != nil {
 				fmt.Fprintf(os.Stderr, "Error while closing file" + derr.Error())
-			}
+	}
 		}()
 		err = yaml.NewDecoder(file).Decode(&Configuration)
 	}
@@ -88,7 +88,7 @@ func Save() error {
 		// we have an error
 		if os.IsNotExist(err) {
 			// error is that the config doesnt yet exist, create it
-			file, err = os.Create(consts.ConfigFilePath)
+			file, err = os.OpenFile(consts.ConfigFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 			if err != nil {
 				return errors.Wrapf(err, "Unable to write configuration file at %s", consts.ConfigFilePath)
 			}
@@ -248,11 +248,11 @@ func LogConfiguration(stdOut, logFile bool) error {
 	var ioWriterDefault io.Writer
 
 	// creating the log file if not preset
-	secLogFile, err := os.OpenFile(consts.SecLogFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+	secLogFile, err := os.OpenFile(consts.SecLogFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		logrus.Fatal("Unable to open log file. " + err.Error())
 	}
-	defaultLogFile, err := os.OpenFile(consts.LogFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+	defaultLogFile, err := os.OpenFile(consts.LogFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		logrus.Fatal("Unable to open log file. " + err.Error())
 	}
