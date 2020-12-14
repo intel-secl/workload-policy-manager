@@ -85,7 +85,7 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 		defer func() {
 			derr := privateKeyFile.Close()
 			if derr != nil {
-				fmt.Fprintf(os.Stderr, "Error while closing file" + derr.Error())
+				fmt.Fprintf(os.Stderr, "Error while closing file"+derr.Error())
 			}
 		}()
 		err = pem.Encode(privateKeyFile, privateKey)
@@ -115,7 +115,7 @@ func (ek CreateEnvelopeKey) Run(c csetup.Context) error {
 		defer func() {
 			derr := publicKeyFile.Close()
 			if derr != nil {
-				fmt.Fprintf(os.Stderr, "Error while closing file" + derr.Error())
+				fmt.Fprintf(os.Stderr, "Error while closing file"+derr.Error())
 			}
 		}()
 

@@ -47,12 +47,12 @@ var Configuration struct {
 		Username string
 		Password string
 	}
-	FlavorSigningKeyFile       string
-	FlavorSigningCertFile   string
-	LogLevel          string
-	LogEntryMaxLength int
-	LogEnableStdout   bool
-	ConfigComplete bool
+	FlavorSigningKeyFile  string
+	FlavorSigningCertFile string
+	LogLevel              string
+	LogEntryMaxLength     int
+	LogEnableStdout       bool
+	ConfigComplete        bool
 }
 
 var LogWriter io.Writer
@@ -64,8 +64,8 @@ func init() {
 		defer func() {
 			derr := file.Close()
 			if derr != nil {
-				fmt.Fprintf(os.Stderr, "Error while closing file" + derr.Error())
-	}
+				fmt.Fprintf(os.Stderr, "Error while closing file"+derr.Error())
+			}
 		}()
 		err = yaml.NewDecoder(file).Decode(&Configuration)
 	}
@@ -81,7 +81,7 @@ func Save() error {
 	defer func() {
 		derr := file.Close()
 		if derr != nil {
-			fmt.Fprintf(os.Stderr, "Error while closing file" + derr.Error())
+			fmt.Fprintf(os.Stderr, "Error while closing file"+derr.Error())
 		}
 	}()
 	if err != nil {

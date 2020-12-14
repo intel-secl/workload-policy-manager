@@ -115,9 +115,9 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 			_, err = cmd.CombinedOutput()
 			if err != nil {
 				if strings.Contains(fmt.Sprint(cmd.Stderr), "unknown flag: --imgcrypt-opt") {
-					log.Errorf("Failed to build container image: %s", fmt.Sprint(cmd.Stderr) )
-					return signedFlavor, errors.Wrap(errors.New("Secure Docker Daemon is not properly " +
-						"installed. Check logs for more details"),  "Unable to build container image with " +
+					log.Errorf("Failed to build container image: %s", fmt.Sprint(cmd.Stderr))
+					return signedFlavor, errors.Wrap(errors.New("Secure Docker Daemon is not properly "+
+						"installed. Check logs for more details"), "Unable to build container image with "+
 						"encryption")
 				}
 				return signedFlavor, errors.Wrap(err, "Unable to build container image with encryption")
@@ -147,18 +147,18 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 	//Create image flavor
 	containerImageFlavor, err := flavor.GetContainerImageFlavor(flavorLabel, encryptionRequired, keyUrlString, integrityEnforced, notaryServerURL)
 	if err != nil {
-		return signedFlavor, errors.Wrap(err, "Error while creating image flavor: " + err.Error())
+		return signedFlavor, errors.Wrap(err, "Error while creating image flavor: "+err.Error())
 	}
 
 	//Marshall the image flavor to a JSON string
 	containerImageFlavorJSON, err := json.Marshal(containerImageFlavor)
 	if err != nil {
-		return signedFlavor, errors.Wrap(err, "Error while marshalling image flavor: " + err.Error())
+		return signedFlavor, errors.Wrap(err, "Error while marshalling image flavor: "+err.Error())
 	}
 
 	signedFlavor, err = flavorUtil.GetSignedFlavor(string(containerImageFlavorJSON), consts.FlavorSigningKeyPath)
 	if err != nil {
-		return signedFlavor, errors.Wrap(err, "Error while signing image flavor: " + err.Error())
+		return signedFlavor, errors.Wrap(err, "Error while signing image flavor: "+err.Error())
 	}
 
 	//If no output flavor file path was specified, return the marshalled image flavor
@@ -169,7 +169,7 @@ func CreateContainerImageFlavor(imageName, tag, dockerFilePath, buildDir,
 	//Otherwise, write it to the specified file
 	err = ioutil.WriteFile(outputFlavorFilePath, []byte(signedFlavor), 0600)
 	if err != nil {
-		return signedFlavor, errors.Wrap(err, "Error writing image flavor to output file: " + err.Error())
+		return signedFlavor, errors.Wrap(err, "Error writing image flavor to output file: "+err.Error())
 	}
 	return signedFlavor, nil
 }
