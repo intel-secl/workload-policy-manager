@@ -3,7 +3,7 @@
 git clone https://gitlab.devtools.intel.com/sst/isecl/secure-docker-daemon.git 2>/dev/null
 
 cd secure-docker-daemon
-git feth
+git fetch
 git checkout v3.4/develop
 git pull
 
