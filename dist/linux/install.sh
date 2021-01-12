@@ -173,55 +173,54 @@ if [ $SETUP_RESULT -ne 0 ]; then
   exit $SETUP_RESULT
 fi
 
-#Install secure docker daemon with wpm only if WPM_WITH_SECURE_DOCKER_DAEMON is enabled
-#and SKIP_SECURE_DOCKER_DAEMON is not enabled in wpm.env
-if [ "$WPM_WITH_CONTAINER_SECURITY" = "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" = "Y" ] || [ "$WPM_WITH_CONTAINER_SECURITY" = "yes" ]; then
-  if [ "$SKIP_SECURE_DOCKER_DAEMON" = "y" ] || [ "$SKIP_SECURE_DOCKER_DAEMON" = "Y" ] || [ "$SKIP_SECURE_DOCKER_DAEMON" = "yes" ]; then
-    echo "Skipping secure-docker-daemon installation"
+#Install secure docker daemon with wpm only if WPM_WITH_CONTAINER_SECURITY_DOCKER is enabled in wpm.env
+if [ "$WPM_WITH_CONTAINER_SECURITY_DOCKER" = "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY_DOCKER" = "Y" ] || [ "$WPM_WITH_CONTAINER_SECURITY_DOCKER" = "yes" ]; then
+  which docker 2>/dev/null
+  if [ $? -ne 0 ]; then
+    echo_failure "Error: Docker is required for Secure Docker Daemon to be installed!"
+    exit 1
+  fi
+  which cryptsetup 2>/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Installing cryptsetup"
+    yum install -y cryptsetup
+    CRYPTSETUP_RESULT=$?
+    if [ $CRYPTSETUP_RESULT -ne 0 ]; then
+      echo_failure "Error: Secure Docker Daemon requires cryptsetup - Install failed. Exiting."
+      exit $CRYPTSETUP_RESULT
+    fi
+  fi
+  echo "Installing secure docker daemon"
+  systemctl stop docker.service
+  mkdir -p $WPM_HOME/secure-docker-daemon/backup
+  cp /usr/bin/docker $WPM_HOME/secure-docker-daemon/backup/
+  # backup config files
+  if [ -f "/etc/docker/daemon.json" ]; then
+    cp /etc/docker/daemon.json $WPM_HOME/secure-docker-daemon/backup
+  fi
+  chown -R root:root docker-daemon
+  cp -f docker-daemon/docker /usr/bin/
+  which /usr/bin/dockerd-ce 2>/dev/null
+  if [ $? -ne 0 ]; then
+    cp /usr/bin/dockerd $WPM_HOME/secure-docker-daemon/backup/
+    cp -f docker-daemon/dockerd-ce /usr/bin/dockerd
   else
-    which docker 2>/dev/null
-    if [ $? -ne 0 ]; then
-      echo_failure "Error: Docker is required for Secure Docker Daemon to be installed!"
-      exit 1
-    fi
-    which cryptsetup 2>/dev/null
-    if [ $? -ne 0 ]; then
-      echo "Installing cryptsetup"
-      yum install -y cryptsetup
-      CRYPTSETUP_RESULT=$?
-      if [ $CRYPTSETUP_RESULT -ne 0 ]; then
-        echo_failure "Error: Secure Docker requires cryptsetup - Install failed. Exiting."
-        exit $CRYPTSETUP_RESULT
-      fi
-    fi
-    echo "Installing secure docker daemon"
-    systemctl stop docker.service
-    mkdir -p $WPM_HOME/secure-docker-daemon/backup
-    cp /usr/bin/docker $WPM_HOME/secure-docker-daemon/backup/
-    # backup config files
-    if [ -f "/etc/docker/daemon.json" ]; then
-      cp /etc/docker/daemon.json $WPM_HOME/secure-docker-daemon/backup
-    fi
-    chown -R root:root docker-daemon
-    cp -f docker-daemon/docker /usr/bin/
-    which /usr/bin/dockerd-ce 2>/dev/null
-    if [ $? -ne 0 ]; then
-      cp /usr/bin/dockerd $WPM_HOME/secure-docker-daemon/backup/
-      cp -f docker-daemon/dockerd-ce /usr/bin/dockerd
-    else
-      cp /usr/bin/dockerd-ce $WPM_HOME/secure-docker-daemon/backup/
-      cp -f docker-daemon/dockerd-ce /usr/bin/dockerd-ce
-    fi
+    cp /usr/bin/dockerd-ce $WPM_HOME/secure-docker-daemon/backup/
+    cp -f docker-daemon/dockerd-ce /usr/bin/dockerd-ce
+  fi
 
-    # Replace existing daemon.json with the secureoverlay2 one
-    mkdir -p /etc/docker
-    cp daemon.json /etc/docker/
+  # Replace existing daemon.json with the secureoverlay2 one
+  mkdir -p /etc/docker
+  cp daemon.json /etc/docker/
 
-    echo "Restarting docker"
-    systemctl daemon-reload
-    systemctl start docker.service
-    cp uninstall-secure-docker-daemon.sh $WPM_HOME/secure-docker-daemon/
+  echo "Restarting docker"
+  systemctl daemon-reload
+  systemctl start docker.service
+  cp uninstall-secure-docker-daemon.sh $WPM_HOME/secure-docker-daemon/
+elif [ "$WPM_WITH_CONTAINER_SECURITY_CRIO" = "y" ] || [ "$WPM_WITH_CONTAINER_SECURITY_CRIO" = "Y" ] || [ "$WPM_WITH_CONTAINER_SECURITY_CRIO" = "yes" ]; then
+  isinstalled=$(rpm -q skopeo)
+  if [ "$isinstalled" == "package skopeo is not installed" ]; then
+    echo_warning "Prerequisite skopeo is not installed, please install skopeo before proceeding with container confidentiality."
   fi
 fi
-
 echo "Installation completed."
