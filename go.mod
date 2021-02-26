@@ -12,10 +12,10 @@ require (
 	intel/isecl/lib/flavor/v3 v3.4.0
 )
 
-replace intel/isecl/lib/flavor/v3 => gitlab.devtools.intel.com/sst/isecl/lib/flavor.git/v3 v3.4/develop
+replace intel/isecl/lib/flavor/v3 => github.com/intel-secl/flavor/v3 v3.4.0
 
-replace intel/isecl/lib/common/v3 => gitlab.devtools.intel.com/sst/isecl/lib/common.git/v3 v3.4/develop
+replace intel/isecl/lib/common/v3 => github.com/intel-secl/common/v3 v3.4.0
 
 replace github.com/vmware/govmomi => github.com/arijit8972/govmomi fix-tpm-attestation-output
 
-replace github.com/intel-secl/intel-secl/v3 => gitlab.devtools.intel.com/sst/isecl/intel-secl.git/v3 v3.4/develop
+replace github.com/intel-secl/intel-secl/v3 => github.com/intel-secl/intel-secl/v3 v3.4.0
