@@ -37,20 +37,23 @@ import (
 var (
 	// Version holds the version number for the WPM binary
 	Version string = ""
-	// Time holds the build timestamp for the WPM binary
-	Time string = ""
-	// Branch holds the git build branch for the WPM binary
-	Branch string = ""
+	// BuildDate holds the build date for the WPM binary
+	BuildDate string = ""
 	// GitHash holds the commit hash for the WPM binary
 	GitHash = ""
-	// GitCommitDate holds the git commit date for the WPM binary
-	GitCommitDate string = ""
-	log                  = commLog.GetDefaultLogger()
-	secLog               = commLog.GetSecurityLogger()
+	log     = commLog.GetDefaultLogger()
+	secLog  = commLog.GetSecurityLogger()
 )
 
+func getVersion() string {
+	verStr := fmt.Sprintf("Service Name: %s\n", consts.ExplicitServiceName)
+	verStr = verStr + fmt.Sprintf("Version: %s-%s\n", Version, GitHash)
+	verStr = verStr + fmt.Sprintf("Build Date: %s\n", BuildDate)
+	return verStr
+}
+
 func printVersion() {
-	fmt.Printf("Workload Policy Manager Version %s\nBuild %s at %s - %s\n", Version, Branch, Time, GitHash)
+	fmt.Printf(getVersion())
 }
 
 func main() {
